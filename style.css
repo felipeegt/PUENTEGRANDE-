@@ -91,10 +91,16 @@ button:hover {
 /* ── Victoria ── */
 .box.win h1  { color: #4ecb71; text-shadow: 0 0 12px rgba(78,203,113,0.5); }
 .box.win p   { color: #9090b0; margin-bottom: 10px; }
+.box.win button { margin-top: 8px; display: block; width: 100%; }
+
+/* ── Puntaje final ── */
+.box.final h1 { color: #c8a84b; text-shadow: 0 0 12px rgba(200,168,75,0.5); }
+.box.final p  { color: #9090b0; margin-bottom: 12px; }
 
 /* ── Game Over ── */
 .box.gameover h1 { color: #e05050; text-shadow: 0 0 12px rgba(220,80,80,0.5); }
-.box.gameover p  { color: #9090b0; margin-bottom: 20px; }
+.box.gameover p  { color: #9090b0; margin-bottom: 12px; }
+.box.gameover button { margin-top: 6px; display: block; width: 100%; }
 
 /* ── HUD ── */
 #screen-game {
@@ -105,7 +111,7 @@ button:hover {
 
 #hud {
   width: 100%;
-  max-width: 600px;
+  max-width: 608px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -118,6 +124,7 @@ button:hover {
 }
 
 #hud-ticket { color: #c8a84b; }
+#hud-score  { color: #7ecfff; }
 
 /* ── Canvas ── */
 #canvas {

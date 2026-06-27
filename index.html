@@ -27,17 +27,30 @@
       <span id="hud-ticket">🎫 Ticket: NO</span>
       <span id="hud-time">⏱ 0s</span>
       <span id="hud-level">Nivel 1</span>
+      <span id="hud-score">⭐ 0</span>
     </div>
     <canvas id="canvas"></canvas>
   </div>
 
-  <!-- Pantalla de victoria -->
+  <!-- Pantalla de victoria (nivel completado) -->
   <div id="screen-win" class="screen">
     <div class="box win">
-      <h1>🎉 ¡LIBRE!</h1>
-      <p>Escapaste de Puente Grande.</p>
+      <h1 id="win-title">🎉 ¡NIVEL SUPERADO!</h1>
+      <p id="win-msg">Escapaste de Puente Grande.</p>
       <p id="win-time"></p>
-      <button id="btn-win">▶ JUGAR DE NUEVO</button>
+      <p id="win-score-line"></p>
+      <button id="btn-next-level">▶ SIGUIENTE NIVEL</button>
+      <button id="btn-win" style="display:none">🏆 VER PUNTAJE FINAL</button>
+    </div>
+  </div>
+
+  <!-- Pantalla de puntaje final -->
+  <div id="screen-final" class="screen">
+    <div class="box final">
+      <h1>🔓 ¡LIBRE POR COMPLETO!</h1>
+      <p>Completaste los 3 niveles de Puente Grande.</p>
+      <p id="final-score"></p>
+      <button id="btn-final">↺ JUGAR DE NUEVO</button>
     </div>
   </div>
 
@@ -45,8 +58,10 @@
   <div id="screen-gameover" class="screen">
     <div class="box gameover">
       <h1>🚨 TE ATRAPARON</h1>
-      <p>Un guardia te descubrió. Inténtalo de nuevo.</p>
-      <button id="btn-retry">↺ REINTENTAR</button>
+      <p id="gameover-msg">Un guardia te descubrió. Inténtalo de nuevo.</p>
+      <p id="gameover-score"></p>
+      <button id="btn-retry">↺ REINTENTAR NIVEL</button>
+      <button id="btn-menu">⬅ MENÚ</button>
     </div>
   </div>
 
