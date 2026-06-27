@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PUENTEGRANDE — Escapa</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Pantalla de inicio -->
+  <div id="screen-start" class="screen active">
+    <div class="box">
+      <h1>🔒 PUENTEGRANDE</h1>
+      <p class="subtitle">Escapa de la cárcel, evita a los guardias<br>y consigue tu ticket de libertad.</p>
+      <div class="controls-info">
+        <strong>Controles:</strong>
+        <span>⬆ ⬇ ⬅ ➡  o  W A S D</span>
+      </div>
+      <button id="btn-start">▶ JUGAR</button>
+    </div>
+  </div>
+
+  <!-- Pantalla de juego -->
+  <div id="screen-game" class="screen">
+    <div id="hud">
+      <span id="hud-ticket">🎫 Ticket: NO</span>
+      <span id="hud-time">⏱ 0s</span>
+      <span id="hud-level">Nivel 1</span>
+    </div>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <!-- Pantalla de victoria -->
+  <div id="screen-win" class="screen">
+    <div class="box win">
+      <h1>🎉 ¡LIBRE!</h1>
+      <p>Escapaste de Puente Grande.</p>
+      <p id="win-time"></p>
+      <button id="btn-win">▶ JUGAR DE NUEVO</button>
+    </div>
+  </div>
+
+  <!-- Pantalla de game over -->
+  <div id="screen-gameover" class="screen">
+    <div class="box gameover">
+      <h1>🚨 TE ATRAPARON</h1>
+      <p>Un guardia te descubrió. Inténtalo de nuevo.</p>
+      <button id="btn-retry">↺ REINTENTAR</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
