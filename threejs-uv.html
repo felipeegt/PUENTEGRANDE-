@@ -52,7 +52,7 @@
         }
 
         function initParticles() {
-            const count = 12000;
+            const count = isMobile ? 4000 : 12000;
             const geometry = new THREE.BufferGeometry();
             geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count*3), 3));
             geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count*3), 3));
@@ -120,9 +120,10 @@
             const pos = particleSystem.geometry.attributes.position.array;
             const col = particleSystem.geometry.attributes.color.array;
             const sz = particleSystem.geometry.attributes.size.array;
+            const total = sz.length;
 
             for (let i = 0; i < count; i++) {
-                const idx = Math.floor(Math.random() * 8000) * 3;
+                const idx = Math.floor(Math.random() * total) * 3;
                 pos[idx]   = x - CONFIG.GAME_WIDTH/2 + (Math.random()-0.5)*60;
                 pos[idx+1] = y - CONFIG.GAME_HEIGHT/2 + (Math.random()-0.5)*80;
                 pos[idx+2] = 5;
