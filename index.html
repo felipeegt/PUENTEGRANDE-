@@ -2957,8 +2957,8 @@ class Game {
   showVictory(winner) {
     const screen = document.getElementById('victory-screen');
     const title = document.getElementById('victory-title');
-    const score = document.getElgetElementById('victory-score');
-    if (winner === 'p1')
+    const score = document.getElementById('victory-score');
+    if (winner === 'p1') {
       title.textContent = 'PLAYER 1 WINS';
       title.className = 'p1-wins';
     } else {
