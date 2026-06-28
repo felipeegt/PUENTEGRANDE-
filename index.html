@@ -1,0 +1,3330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>KOF Style Fighter V2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ========================
+   CSS CUSTOM PROPERTIES (Cyber-Fighting Aesthetic)
+   ======================== */
+:root {
+  --primary: #ff6b35;
+  --secondary: #ffd700;
+  --accent: #00ff88;
+  --danger: #ff3333;
+  --purple: #ff00ff;
+  --bg-dark: #0d0221;
+  --bg-panel: rgba(20, 5, 40, 0.75);
+  --glass: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glow-gold: 0 0 20px rgba(255, 215, 0, 0.5);
+  --glow-orange: 0 0 20px rgba(255, 107, 53, 0.6);
+  --glow-green: 0 0 15px rgba(0, 255, 136, 0.4);
+  --font-title: 'Orbitron', sans-serif;
+  --font-body: 'Roboto', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; touch-action:none; user-select:none; -webkit-user-select:none; }
+body { background:var(--bg-dark); overflow:hidden; font-family:var(--font-body); color:#fff; }
+#game-container { position:relative; width:100vw; height:100vh; }
+#gameCanvas { display:block; width:100%; height:100%; }
+
+#ui-layer { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+#ui-layer > * { pointer-events:auto; }
+
+/* ========================
+   SCREEN BASE STYLES
+   ======================== */
+.screen { position:absolute; top:0; left:0; width:100%; height:100%; display:none; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg,#1a0a2e 0%,#0d0221 100%); }
+.screen.active { display:flex; }
+
+/* ========================
+   INTRO SCREEN
+   ======================== */
+#intro-screen { z-index:300; background:linear-gradient(180deg,#0d0221 0%,#1a0a2e 40%,#2a1040 100%); cursor:pointer; }
+#intro-logo { font-family:var(--font-title); font-size:4rem; font-weight:900; color:var(--secondary); text-shadow:0 0 30px rgba(255,215,0,0.6), 0 0 60px rgba(255,107,53,0.4); letter-spacing:8px; text-align:center; animation:logoEnter 2s ease-out forwards; opacity:0; }
+#intro-subtitle { font-family:var(--font-title); font-size:1.2rem; color:var(--primary); letter-spacing:12px; margin-top:10px; opacity:0; animation:fadeInUp 1s 1.5s ease-out forwards; }
+#intro-silhouettes { display:flex; gap:30px; margin:40px 0; }
+.intro-char { width:60px; height:100px; border-radius:30px; background:linear-gradient(180deg,rgba(255,107,53,0.3),rgba(255,0,255,0.2)); opacity:0; animation:silFadeIn 0.6s ease-out forwards; }
+.intro-char:nth-child(1) { animation-delay:2.0s; }
+.intro-char:nth-child(2) { animation-delay:2.2s; }
+.intro-char:nth-child(3) { animation-delay:2.4s; }
+.intro-char:nth-child(4) { animation-delay:2.6s; }
+.intro-char:nth-child(5) { animation-delay:2.8s; }
+.intro-char:nth-child(6) { animation-delay:3.0s; }
+#intro-prompt { font-family:var(--font-title); font-size:1.1rem; color:#888; letter-spacing:4px; animation:promptBlink 1.5s infinite; margin-top:20px; }
+@keyframes logoEnter { 0% { opacity:0; transform:scale(0.3) translateY(50px); } 60% { opacity:1; transform:scale(1.05) translateY(-5px); } 100% { opacity:1; transform:scale(1) translateY(0); } }
+@keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+@keyframes silFadeIn { from { opacity:0; transform:translateY(30px) scale(0.8); } to { opacity:0.6; transform:translateY(0) scale(1); } }
+@keyframes promptBlink { 0%,100% { opacity:0.4; } 50% { opacity:1; } }
+
+/* ========================
+   MENU SCREEN
+   ======================== */
+#menu-screen h1 { font-family:var(--font-title); font-size:3.5rem; color:var(--secondary); text-shadow:var(--glow-gold); margin-bottom:2rem; letter-spacing:4px; animation:menuTitlePulse 3s ease-in-out infinite; }
+@keyframes menuTitlePulse { 0%,100% { text-shadow:0 0 20px rgba(255,215,0,0.5); } 50% { text-shadow:0 0 40px rgba(255,215,0,0.8),0 0 80px rgba(255,107,53,0.4); } }
+.menu-btn { background:linear-gradient(135deg,#ff6b35,#f7931e); border:none; padding:15px 40px; margin:10px; font-size:1.2rem; color:#fff; cursor:pointer; border-radius:8px; text-transform:uppercase; font-weight:bold; font-family:var(--font-title); letter-spacing:2px; transition:transform 0.2s,box-shadow 0.2s; position:relative; overflow:hidden; }
+.menu-btn:hover { transform:scale(1.05); box-shadow:var(--glow-orange); }
+.menu-btn::after { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent); transition:left 0.5s; }
+.menu-btn:hover::after { left:100%; }
+
+/* ========================
+   CHARACTER SELECT
+   ======================== */
+#char-select-screen h2 { font-family:var(--font-title); font-size:2rem; color:var(--secondary); margin-bottom:1rem; letter-spacing:3px; }
+.char-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin:20px; }
+.char-card { width:120px; height:160px; background:#222; border:3px solid #444; border-radius:10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:all 0.2s; position:relative; overflow:hidden; }
+.char-card:hover { border-color:var(--secondary); transform:scale(1.05); box-shadow:var(--glow-gold); }
+.char-card.selected { border-color:var(--accent); box-shadow:var(--glow-green); }
+.char-card .char-preview { width:80px; height:80px; background:#333; border-radius:50%; margin-bottom:8px; transition:transform 0.3s; }
+.char-card:hover .char-preview { transform:scale(1.1); }
+.char-card .char-name { font-size:0.9rem; font-weight:bold; text-align:center; font-family:var(--font-body); }
+
+/* ========================
+   HUD
+   ======================== */
+#hud { position:absolute; top:10px; left:10px; right:10px; display:flex; justify-content:space-between; align-items:center; pointer-events:none; z-index:10; }
+.hud-side { display:flex; align-items:center; gap:10px; }
+.health-bar-container { width:300px; height:24px; background:#333; border:2px solid #555; border-radius:4px; overflow:hidden; position:relative; }
+.health-bar { height:100%; background:linear-gradient(90deg,#ff3333,#ff6666); transition:width 0.2s; width:100%; }
+.health-bar.yellow { background:linear-gradient(90deg,#ffaa00,#ffcc00); }
+.health-bar.red { background:linear-gradient(90deg,#cc0000,#ff0000); animation:pulse 0.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+.health-bar.flash { animation:barFlash 0.3s ease-out; }
+@keyframes barFlash { 0% { filter:brightness(3); } 100% { filter:brightness(1); } }
+.meter-bar-container { width:200px; height:12px; background:#222; border:1px solid #444; border-radius:2px; margin-top:4px; overflow:hidden; }
+.meter-bar { height:100%; background:linear-gradient(90deg,#0088ff,#00ccff); width:0%; transition:width 0.3s; }
+.timer { font-size:2.5rem; font-weight:bold; color:var(--secondary); text-shadow:var(--glow-gold); font-family:var(--font-title); }
+.timer.danger { color:#ff3333; animation:timerPulse 0.5s infinite; }
+@keyframes timerPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.1);} }
+.player-label { font-size:0.8rem; color:#aaa; margin-top:2px; font-family:var(--font-title); letter-spacing:1px; }
+
+/* ========================
+   COMBO COUNTER
+   ======================== */
+.combo-counter { position:absolute; top:80px; pointer-events:none; z-index:20; display:none; }
+.combo-counter.active { display:block; }
+.combo-p1 { left:20px; text-align:left; }
+.combo-p2 { right:20px; text-align:right; }
+.combo-count { font-family:var(--font-title); font-size:2.5rem; font-weight:900; color:var(--danger); text-shadow:0 0 15px rgba(255,51,51,0.6); animation:comboPop 0.2s ease-out; }
+.combo-text { font-family:var(--font-title); font-size:0.8rem; color:#ff8888; letter-spacing:2px; text-transform:uppercase; }
+.combo-hits { font-family:var(--font-title); font-size:1rem; color:var(--secondary); }
+@keyframes comboPop { 0%{transform:scale(2);} 100%{transform:scale(1);} }
+
+/* ========================
+   TOUCH CONTROLS (ULTRA RESPONSIVE)
+   ======================== */
+#touch-controls { position:fixed; bottom:0; left:0; width:100%; height:220px; display:none; pointer-events:none; z-index:50; background:linear-gradient(to top, rgba(0,0,0,0.45), transparent); }
+#touch-controls.active { display:block; }
+
+.joystick-zone { position:absolute; bottom:15px; left:15px; width:160px; height:160px; pointer-events:auto; }
+.joystick-base { position:absolute; width:160px; height:160px; background:rgba(255,255,255,0.08); border:3px solid rgba(255,255,255,0.25); border-radius:50%; backdrop-filter:blur(4px); }
+.joystick-stick { position:absolute; width:64px; height:64px; background:linear-gradient(135deg, rgba(255,107,53,0.6), rgba(255,215,0,0.5)); border:2px solid rgba(255,255,255,0.6); border-radius:50%; top:50%; left:50%; transform:translate(-50%,-50%); box-shadow:0 0 15px rgba(255,107,53,0.4); transition:transform 0.03s; }
+.joystick-stick.active { background:linear-gradient(135deg, rgba(255,107,53,0.9), rgba(255,215,0,0.8)); box-shadow:0 0 25px rgba(255,107,53,0.7); }
+
+.btn-zone { position:absolute; bottom:15px; right:15px; display:flex; gap:12px; align-items:flex-end; pointer-events:auto; }
+.action-btn { width:72px; height:72px; border-radius:50%; border:3px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.12); color:#fff; font-size:0.75rem; font-weight:bold; display:flex; align-items:center; justify-content:center; cursor:pointer; touch-action:none; font-family:var(--font-body); letter-spacing:1px; backdrop-filter:blur(4px); transition:all 0.05s; user-select:none; -webkit-user-select:none; }
+.action-btn.pressed { transform:scale(0.88); filter:brightness(1.4); }
+.action-btn.punch { border-color:#ff6b35; background:rgba(255,107,53,0.2); color:#ff6b35; }
+.action-btn.punch.pressed { background:rgba(255,107,53,0.6); box-shadow:0 0 25px rgba(255,107,53,0.6); }
+.action-btn.kick { border-color:#00ccff; background:rgba(0,204,255,0.2); color:#00ccff; }
+.action-btn.kick.pressed { background:rgba(0,204,255,0.6); box-shadow:0 0 25px rgba(0,204,255,0.6); }
+.action-btn.special { border-color:#ff00ff; background:rgba(255,0,255,0.2); color:#ff00ff; width:64px; height:64px; font-size:0.7rem; }
+.action-btn.special.pressed { background:rgba(255,0,255,0.6); box-shadow:0 0 25px rgba(255,0,255,0.6); }
+.action-btn.block { border-color:#888; background:rgba(136,136,136,0.2); color:#aaa; width:58px; height:58px; font-size:0.65rem; }
+.action-btn.block.pressed { background:rgba(136,136,136,0.5); box-shadow:0 0 15px rgba(136,136,136,0.4); }
+/* ========================
+   PAUSE MENU
+   ======================== */
+#pause-menu { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:100; }
+#pause-menu.active { display:flex; }
+#pause-menu h2 { font-family:var(--font-title); font-size:2rem; color:var(--secondary); margin-bottom:1rem; letter-spacing:4px; }
+
+/* ========================
+   ANNOUNCER & ROUND TEXT
+   ======================== */
+.announcer { position:absolute; top:30%; left:50%; transform:translateX(-50%); font-family:var(--font-title); font-size:3rem; font-weight:bold; color:var(--purple); text-shadow:0 0 20px rgba(255,0,255,0.8); opacity:0; transition:opacity 0.3s; pointer-events:none; z-index:50; }
+.announcer.show { opacity:1; animation:announcerPop 0.5s ease-out; }
+@keyframes announcerPop { 0%{transform:translateX(-50%) scale(0.5)} 70%{transform:translateX(-50%) scale(1.1)} 100%{transform:translateX(-50%) scale(1)} }
+#round-text { position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); font-family:var(--font-title); font-size:4rem; font-weight:bold; color:var(--secondary); text-shadow:0 0 30px rgba(255,215,0,0.6); opacity:0; transition:opacity 0.5s; pointer-events:none; z-index:60; }
+#round-text.show { opacity:1; }
+
+/* ========================
+   LOADING SCREEN
+   ======================== */
+#loading-screen { position:absolute; top:0; left:0; width:100%; height:100%; background:#0d0221; display:none; flex-direction:column; align-items:center; justify-content:center; z-index:200; }
+#loading-screen.active { display:flex; }
+#loading-bar { width:300px; height:20px; background:#222; border:2px solid #444; border-radius:10px; overflow:hidden; margin-top:20px; }
+#loading-fill { height:100%; background:linear-gradient(90deg,#ff6b35,#ffd700); width:0%; transition:width 0.2s; }
+#loading-text { color:#aaa; margin-top:10px; font-size:1rem; }
+#loading-skip { margin-top:20px; color:#888; font-size:0.9rem; cursor:pointer; }
+
+/* ========================
+   CONTROLS SCREEN
+   ======================== */
+#controls-screen { z-index:150; }
+.controls-panel { background:var(--bg-panel); border:1px solid var(--glass-border); border-radius:16px; padding:30px 40px; max-width:700px; width:90%; backdrop-filter:blur(12px); max-height:80vh; overflow-y:auto; }
+.controls-panel h2 { font-family:var(--font-title); font-size:1.8rem; color:var(--secondary); text-align:center; margin-bottom:20px; letter-spacing:3px; }
+.controls-section { margin-bottom:20px; }
+.controls-section h3 { font-family:var(--font-title); font-size:1rem; color:var(--primary); margin-bottom:10px; letter-spacing:2px; border-bottom:1px solid rgba(255,107,53,0.3); padding-bottom:5px; }
+.control-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; font-size:0.9rem; }
+.control-row .key { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:4px; padding:3px 10px; font-family:monospace; font-size:0.85rem; color:var(--secondary); min-width:80px; text-align:center; }
+.special-moves-list { margin-top:15px; }
+.special-move-item { background:rgba(0,0,0,0.3); border-radius:8px; padding:10px; margin-bottom:8px; }
+.special-move-item .move-name { color:var(--accent); font-weight:bold; font-size:0.9rem; }
+.special-move-item .move-input { color:#aaa; font-family:monospace; font-size:0.8rem; margin-top:3px; }
+.special-move-item .move-dmg { color:var(--danger); font-size:0.8rem; }
+
+/* ========================
+   SETTINGS SCREEN
+   ======================== */
+#settings-screen { z-index:150; }
+.settings-panel { background:var(--bg-panel); border:1px solid var(--glass-border); border-radius:16px; padding:30px 40px; max-width:500px; width:90%; backdrop-filter:blur(12px); }
+.settings-panel h2 { font-family:var(--font-title); font-size:1.8rem; color:var(--secondary); text-align:center; margin-bottom:25px; letter-spacing:3px; }
+.setting-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.08); }
+.setting-label { font-size:0.95rem; color:#ccc; }
+.setting-control select, .setting-control input[type="range"] { background:rgba(0,0,0,0.4); border:1px solid var(--glass-border); color:#fff; padding:6px 12px; border-radius:6px; font-family:var(--font-body); cursor:pointer; min-width:120px; }
+.setting-control select option { background:#1a0a2e; }
+.volume-value { color:var(--secondary); font-family:var(--font-title); min-width:40px; text-align:right; }
+.settings-buttons { display:flex; gap:15px; justify-content:center; margin-top:25px; }
+.settings-save-msg { color:var(--accent); text-align:center; margin-top:15px; font-size:0.9rem; opacity:0; transition:opacity 0.5s; }
+.settings-save-msg.show { opacity:1; }
+
+/* ========================
+   VICTORY SCREEN
+   ======================== */
+#victory-screen { z-index:250; background:linear-gradient(180deg,rgba(13,2,33,0.95),rgba(26,10,46,0.98)); }
+.victory-content { text-align:center; animation:victoryEnter 1s ease-out; }
+@keyframes victoryEnter { 0%{opacity:0;transform:scale(0.5) translateY(50px);} 100%{opacity:1;transform:scale(1) translateY(0);} }
+#victory-title { font-family:var(--font-title); font-size:3.5rem; font-weight:900; margin-bottom:10px; }
+#victory-title.p1-wins { color:#4488ff; text-shadow:0 0 30px rgba(68,136,255,0.6); }
+#victory-title.p2-wins { color:#ff4444; text-shadow:0 0 30px rgba(255,68,68,0.6); }
+#victory-score { font-family:var(--font-title); font-size:1.5rem; color:var(--secondary); margin-bottom:30px; letter-spacing:3px; }
+.victory-buttons { display:flex; gap:20px; justify-content:center; }
+
+/* ========================
+   DAMAGE FLASH OVERLAY
+   ======================== */
+#damage-flash { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:5; opacity:0; transition:opacity 0.1s; }
+#damage-flash.active { opacity:1; }
+
+/* ========================
+   SCREEN TRANSITIONS
+   ======================== */
+.screen { transition:opacity 0.4s ease; }
+.screen-enter { animation:screenFadeIn 0.5s ease-out; }
+@keyframes screenFadeIn { from { opacity:0; transform:scale(0.98); } to { opacity:1; transform:scale(1); } }
+
+/* ========================
+   RESPONSIVE (ENHANCED)
+   ======================== */
+@media (max-width:768px) {
+  .health-bar-container { width:140px; height:16px; }
+  .meter-bar-container { width:90px; height:10px; }
+  .timer { font-size:1.6rem; }
+  #menu-screen h1 { font-size:2rem; }
+  .char-card { width:85px; height:115px; }
+  #intro-logo { font-size:2rem; letter-spacing:3px; }
+  .controls-panel, .settings-panel { padding:20px; }
+  #victory-title { font-size:2rem; }
+  .joystick-zone { width:130px; height:130px; }
+  .joystick-base { width:130px; height:130px; }
+  .joystick-stick { width:52px; height:52px; }
+  .action-btn { width:60px; height:60px; font-size:0.65rem; }
+  .action-btn.special { width:54px; height:54px; }
+  .action-btn.block { width:48px; height:48px; }
+  #touch-controls { height:180px; }
+  .player-label { font-size:0.7rem; }
+}
+
+@media (max-width:480px) {
+  .health-bar-container { width:100px; height:14px; }
+  .meter-bar-container { width:70px; height:8px; }
+  .timer { font-size:1.3rem; }
+  .joystick-zone { width:110px; height:110px; bottom:10px; left:10px; }
+  .joystick-base { width:110px; height:110px; }
+  .joystick-stick { width:44px; height:44px; }
+  .btn-zone { gap:8px; bottom:10px; right:10px; }
+  .action-btn { width:52px; height:52px; font-size:0.6rem; }
+  .action-btn.special { width:46px; height:46px; }
+  .action-btn.block { width:42px; height:42px; }
+  #touch-controls { height:150px; }
+  .combo-count { font-size:1.8rem; }
+}
+
+@media (orientation: landscape) and (max-height:500px) {
+  #touch-controls { height:140px; }
+  .joystick-zone { width:110px; height:110px; bottom:10px; left:10px; }
+  .joystick-base { width:110px; height:110px; }
+  .joystick-stick { width:44px; height:44px; }
+  .btn-zone { gap:8px; bottom:10px; right:10px; }
+  .action-btn { width:50px; height:50px; font-size:0.6rem; }
+  .action-btn.special { width:44px; height:44px; }
+  .action-btn.block { width:40px; height:40px; }
+  .health-bar-container { width:120px; height:14px; }
+  .timer { font-size:1.4rem; }
+  #hud { top:5px; left:5px; right:5px; }
+}
+
+* { -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }</style>
+</head>
+<body>
+<div id="game-container">
+  <canvas id="gameCanvas"></canvas>
+  <div id="ui-layer">
+    <!-- ========================
+         INTRO SCREEN
+         ======================== -->
+    <div id="intro-screen" class="screen">
+      <div id="intro-logo">KOF STYLE<br>FIGHTER</div>
+      <div id="intro-subtitle">V2 ENHANCED</div>
+      <div id="intro-silhouettes">
+        <div class="intro-char"></div>
+        <div class="intro-char"></div>
+        <div class="intro-char"></div>
+        <div class="intro-char"></div>
+        <div class="intro-char"></div>
+        <div class="intro-char"></div>
+      </div>
+      <div id="intro-prompt">CLICK OR PRESS ANY KEY</div>
+    </div>
+
+    <!-- ========================
+         MENU SCREEN
+         ======================== -->
+    <div id="menu-screen" class="screen">
+      <h1>KOF STYLE V2</h1>
+      <button class="menu-btn" id="btnJugar">Jugar</button>
+      <button class="menu-btn" id="btnTraining">Entrenamiento</button>
+      <button class="menu-btn" id="btnControles">Controles</button>
+      <button class="menu-btn" id="btnSettings">Ajustes</button>
+    </div>
+
+    <!-- ========================
+         CHARACTER SELECT
+         ======================== -->
+    <div id="char-select-screen" class="screen">
+      <h2>SELECCIONA PERSONAJE</h2>
+      <div class="char-grid" id="charGrid"></div>
+      <button class="menu-btn" id="btnPelear">PELEAR</button>
+      <button class="menu-btn" id="btnAtras">Atr&aacute;s</button>
+    </div>
+
+    <!-- ========================
+         HUD
+         ======================== -->
+    <div id="hud" style="display:none;">
+      <div class="hud-side">
+        <div>
+          <div class="health-bar-container"><div id="p1-health" class="health-bar"></div></div>
+          <div class="meter-bar-container"><div id="p1-meter" class="meter-bar"></div></div>
+          <div class="player-label">P1</div>
+        </div>
+      </div>
+      <div class="timer" id="timer">60</div>
+      <div class="hud-side">
+        <div>
+          <div class="health-bar-container"><div id="p2-health" class="health-bar"></div></div>
+          <div class="meter-bar-container"><div id="p2-meter" class="meter-bar"></div></div>
+          <div class="player-label" style="text-align:right;">P2</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================
+         COMBO COUNTER
+         ======================== -->
+    <div id="combo-counter-p1" class="combo-p1 combo-counter">
+      <div class="combo-count" id="combo-p1-count">0</div>
+      <div class="combo-text">HITS</div>
+    </div>
+    <div id="combo-counter-p2" class="combo-p2 combo-counter">
+      <div class="combo-count" id="combo-p2-count">0</div>
+      <div class="combo-text">HITS</div>
+    </div>
+
+    <!-- ========================
+         TOUCH CONTROLS
+         ======================== -->
+    <div id="touch-controls">
+      <div class="joystick-zone" id="joystickZone">
+        <div class="joystick-base"></div>
+        <div class="joystick-stick" id="joystickStick"></div>
+      </div>
+      <div class="btn-zone">
+        <div class="action-btn block" id="btnBlock">BLQ</div>
+        <div class="action-btn punch" id="btnPunch">PU&Ntilde;O</div>
+        <div class="action-btn kick" id="btnKick">PAT</div>
+        <div class="action-btn special" id="btnSpecial">ESP</div>
+      </div>
+    </div>
+
+    <!-- ========================
+         PAUSE MENU
+         ======================== -->
+    <div id="pause-menu">
+      <h2>PAUSA</h2>
+      <button class="menu-btn" id="btnResume">Continuar</button>
+      <button class="menu-btn" id="btnRestart">Reiniciar Ronda</button>
+      <button class="menu-btn" id="btnMenu">Men&uacute; Principal</button>
+    </div>
+
+    <!-- ========================
+         ANNOUNCER & ROUND TEXT
+         ======================== -->
+    <div class="announcer" id="announcer"></div>
+    <div id="round-text"></div>
+
+    <!-- ========================
+         LOADING SCREEN
+         ======================== -->
+    <div id="loading-screen">
+      <h2 style="color:#ffd700; font-size:2rem;">CARGANDO...</h2>
+      <div id="loading-bar"><div id="loading-fill"></div></div>
+      <div id="loading-text">0/0</div>
+      <div id="loading-skip">Toca para saltar</div>
+    </div>
+
+    <!-- ========================
+         CONTROLS SCREEN
+         ======================== -->
+    <div id="controls-screen" class="screen">
+      <div class="controls-panel">
+        <h2>CONTROLES</h2>
+        <div class="controls-section">
+          <h3>Jugador 1</h3>
+          <div class="control-row"><span>Mover Izquierda</span><span class="key">A</span></div>
+          <div class="control-row"><span>Mover Derecha</span><span class="key">D</span></div>
+          <div class="control-row"><span>Saltar</span><span class="key">W</span></div>
+          <div class="control-row"><span>Agacharse</span><span class="key">S</span></div>
+          <div class="control-row"><span>Pu&ntilde;etazo</span><span class="key">J</span></div>
+          <div class="control-row"><span>Patada</span><span class="key">K</span></div>
+          <div class="control-row"><span>Especial</span><span class="key">L</span></div>
+          <div class="control-row"><span>Bloquear</span><span class="key">I</span></div>
+        </div>
+        <div class="controls-section">
+          <h3>Jugador 2 (Numpad)</h3>
+          <div class="control-row"><span>Mover Izquierda</span><span class="key">Numpad 4</span></div>
+          <div class="control-row"><span>Mover Derecha</span><span class="key">Numpad 6</span></div>
+          <div class="control-row"><span>Saltar</span><span class="key">Numpad 8</span></div>
+          <div class="control-row"><span>Agacharse</span><span class="key">Numpad 5</span></div>
+          <div class="control-row"><span>Pu&ntilde;etazo</span><span class="key">Numpad 1</span></div>
+          <div class="control-row"><span>Patada</span><span class="key">Numpad 2</span></div>
+          <div class="control-row"><span>Especial</span><span class="key">Numpad 3</span></div>
+          <div class="control-row"><span>Bloquear</span><span class="key">Numpad 0</span></div>
+        </div>
+        <div class="special-moves-list" id="controls-special-moves"></div>
+        <div style="text-align:center;margin-top:20px;">
+          <button class="menu-btn" id="btnControlsBack">Volver</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================
+         SETTINGS SCREEN
+         ======================== -->
+    <div id="settings-screen" class="screen">
+      <div class="settings-panel">
+        <h2>AJUSTES</h2>
+        <div class="setting-row">
+          <span class="setting-label">Dificultad CPU</span>
+          <div class="setting-control">
+            <select id="setting-difficulty">
+              <option value="easy">F&aacute;cil</option>
+              <option value="medium" selected>Medio</option>
+              <option value="hard">Dif&iacute;cil</option>
+            </select>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Tiempo por Ronda</span>
+          <div class="setting-control">
+            <select id="setting-time">
+              <option value="30">30 seg</option>
+              <option value="60" selected>60 seg</option>
+              <option value="99">99 seg</option>
+            </select>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">N&uacute;mero de Rondas</span>
+          <div class="setting-control">
+            <select id="setting-rounds">
+              <option value="1">1</option>
+              <option value="3" selected>3</option>
+              <option value="5">5</option>
+            </select>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Volumen</span>
+          <div class="setting-control" style="display:flex;align-items:center;gap:10px;">
+            <input type="range" id="setting-volume" min="0" max="100" value="50">
+            <span class="volume-value" id="volume-display">50%</span>
+          </div>
+        </div>
+        <div class="settings-buttons">
+          <button class="menu-btn" id="btnSaveSettings">Guardar</button>
+          <button class="menu-btn" id="btnSettingsBack">Volver</button>
+        </div>
+        <div class="settings-save-msg" id="settings-save-msg">Ajustes guardados</div>
+      </div>
+    </div>
+
+    <!-- ========================
+         VICTORY SCREEN
+         ======================== -->
+    <div id="victory-screen" class="screen">
+      <div class="victory-content">
+        <div id="victory-title">PLAYER 1 WINS</div>
+        <div id="victory-score">1 - 0</div>
+        <div class="victory-buttons">
+          <button class="menu-btn" id="btnRematch">Revancha</button>
+          <button class="menu-btn" id="btnVictoryMenu">Men&uacute;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========================
+// CONFIGURACIoN
+// ========================
+const CONFIG = {
+  GAME_WIDTH: 1280, GAME_HEIGHT: 720, GROUND_Y: 580,
+  GRAVITY: 0.9, FRICTION: 0.88, ROUND_TIME: 60,
+  MAX_HEALTH: 1000, MAX_METER: 100,
+  HITSTOP_FRAMES: 6,
+  PUSHBACK_FORCE: 5,
+  SCREEN_SHAKE_BASE: 3,
+  AIR_FRICTION: 0.98,
+  TERMINAL_VELOCITY: 18,
+  WALL_BOUNCE: 0.3,
+
+  BACKGROUNDS: {
+    city:   'assets/backgrounds/bg_city.png',
+    ruins:  'assets/backgrounds/bg_ruins.png',
+    dojo:   'assets/backgrounds/bg_dojo.png',
+    arena:  'assets/backgrounds/bg_arena.png'
+  },
+
+  PORTRAITS: {
+    dual:        'assets/characters/dual.png',
+    sobrino:     'assets/characters/sobrino.png',
+    incinerador: 'assets/characters/incinerador.png',
+    garravas:    'assets/characters/garravas.png',
+    chapo:       'assets/characters/chapo.png',
+    stoker:      'assets/characters/stoker.png',
+    garravas_boss: 'assets/characters/garravas_boss.png',
+    soldado_elemental: 'assets/characters/soldado_elemental.png'
+  },
+
+  SFX: {
+    punch:   'assets/sfx/hit.mp3',
+    kick:    'assets/sfx/hit.mp3',
+    special: 'assets/sfx/special.mp3',
+    hit:     'assets/sfx/hit.mp3',
+    block:   'assets/sfx/hit.mp3',
+    jump:    'assets/sfx/hit.mp3',
+    bgm:     'assets/sfx/bgm.mp3',
+    win:     'assets/sfx/win.mp3',
+    round:   'assets/sfx/round.mp3'
+  },
+
+  CHARACTERS: {
+    'garravas': {
+      name: 'Garravas', color: '#8B0000',
+      health: 1200, speed: 4, jumpPower: 14, spriteScale: 2.0,
+      spritesheet: {
+        src: 'assets/sprites/garravas/garravas.png',
+        mode: 'grid',
+        cellW: 128, cellH: 128, cols: 11, rows: 6
+      },
+      animMap: {
+        idle:         ['idle',      4, 5],
+        walk:         ['walk',      5, 4],
+        walk_back:    ['walk_back', 3, 4],
+        crouch:       ['crouch',    3, 1],
+        punch:        ['punch',     5, 2],
+        punch_2:      ['punch_2',   5, 2],
+        punch_3:      ['punch_3',   3, 2],
+        kick:         ['kick',      5, 3],
+        kick_air:     ['kick_air',  2, 3],
+        special:      ['special',   8, 4],
+        special_2:    ['special_2', 3, 4],
+        super:        ['super',    10, 6],
+        hit:          ['hit',       4, 5],
+        knockdown:    ['knockdown', 5, 5],
+        victory:      ['victory',   3, 8],
+        taunt:        ['taunt',     3, 8],
+        block:        ['block',     1, 1],
+      },
+      animRanges: {
+        idle: 8, walk: 3, walk_back: 0, crouch: 18,
+        punch: 11, punch_2: 14, punch_3: 18,
+        kick: 22, kick_air: 31,
+        special: 33, special_2: 43, super: 44,
+        hit: 58, knockdown: 61, victory: 56, taunt: 55, block: 57
+      },
+      combos: [
+        { name: "Cadena Brutal", inputs: ["punch","punch","kick"], damage: 150 },
+      ],
+      specialMoves: [
+        { name: "Golpe de Cadena", input: "B,D,F+Punch", damage: 170, startup: 18, cost: 35, type: "rush" },
+      ]
+    },
+    'garravas_boss': {
+      name: 'Garravas Boss', color: '#550000',
+      health: 1500, speed: 3.5, jumpPower: 13, spriteScale: 2.2,
+      spritesheet: {
+        src: 'assets/sprites/garravas_boss/garravas_boss.png',
+        mode: 'grid',
+        cellW: 172, cellH: 192, cols: 8, rows: 4
+      },
+      animMap: {
+        idle:         ['idle',      4, 5],
+        walk:         ['walk',      4, 4],
+        walk_back:    ['walk_back', 4, 4],
+        crouch:       ['crouch',    2, 1],
+        punch:        ['punch',     4, 3],
+        punch_2:      ['punch_2',   4, 3],
+        punch_3:      ['punch_3',   4, 3],
+        kick:         ['kick',      4, 4],
+        kick_air:     ['kick_air',  4, 4],
+        special:      ['special',   4, 4],
+        special_2:    ['special_2', 4, 4],
+        super:        ['super',     4, 5],
+        hit:          ['hit',       4, 5],
+        knockdown:    ['knockdown', 4, 5],
+        victory:      ['victory',   4, 8],
+        taunt:        ['taunt',     4, 8],
+      },
+      animRanges: {
+        idle: 0, walk: 4, walk_back: 8, crouch: 12,
+        punch: 12, punch_2: 16, punch_3: 20,
+        kick: 16, kick_air: 20,
+        special: 20, special_2: 24, super: 24,
+        hit: 24, knockdown: 28, victory: 28, taunt: 29
+      },
+      combos: [
+        { name: "Destrucción", inputs: ["punch","punch","kick"], damage: 180 },
+      ],
+      specialMoves: [
+        { name: "Golpe Mortal", input: "B,D,F+Punch", damage: 200, startup: 20, cost: 40, type: "rush" },
+      ]
+    },
+    'dual': {
+      name: 'Dual', color: '#FF6B35',
+      health: 1050, speed: 5.2, jumpPower: 16, spriteScale: 1.8,
+      spritesheet: {
+        src: 'assets/sprites/dual/dual.png',
+        mode: 'grid',
+        cellW: 88, cellH: 128, cols: 16, rows: 6
+      },
+      animMap: {
+        idle:         ['idle',      6, 5],
+        walk:         ['walk',      6, 4],
+        walk_back:    ['walk_back', 6, 4],
+        crouch:       ['crouch',    4, 1],
+        punch:        ['punch',     6, 2],
+        punch_2:      ['punch_2',   6, 2],
+        punch_3:      ['punch_3',   6, 2],
+        kick:         ['kick',      6, 3],
+        kick_air:     ['kick_air',  6, 3],
+        special:      ['special',   8, 4],
+        special_2:    ['special_2', 8, 4],
+        super:        ['super',     8, 5],
+        hit:          ['hit',       6, 5],
+        knockdown:    ['knockdown', 6, 5],
+        victory:      ['victory',   6, 8],
+        taunt:        ['taunt',     6, 8],
+      },
+      animRanges: {
+        idle: 0, walk: 6, walk_back: 12, crouch: 18,
+        punch: 22, punch_2: 28, punch_3: 34,
+        kick: 28, kick_air: 34,
+        special: 34, special_2: 42, super: 42,
+        hit: 50, knockdown: 56, victory: 62, taunt: 68
+      },
+      combos: [
+        { name: "Combo Fuego", inputs: ["punch","punch","kick"], damage: 150 },
+        { name: "Combo Hielo", inputs: ["kick","punch","special"], damage: 180 },
+      ],
+      specialMoves: [
+        { name: "Bola Elemental", input: "D,DF,F+Punch", damage: 140, startup: 12, cost: 25, type: "projectile" },
+        { name: "Tormenta Dual", input: "F,D,DF+Kick", damage: 170, startup: 16, cost: 30, knockdown: true, type: "uppercut" },
+      ]
+    },
+    'chapo': {
+      name: 'Chapo', color: '#FFD700',
+      health: 1050, speed: 5.5, jumpPower: 17, spriteScale: 2.0,
+      spritesheet: {
+        src: 'assets/sprites/chapo/chapo.png',
+        mode: 'grid',
+        cellW: 88, cellH: 128, cols: 16, rows: 6
+      },
+      animMap: {
+        idle:         ['idle',      6, 5],
+        walk:         ['walk',      6, 4],
+        walk_back:    ['walk_back', 6, 4],
+        crouch:       ['crouch',    4, 1],
+        punch:        ['punch',     6, 2],
+        punch_2:      ['punch_2',   6, 2],
+        punch_3:      ['punch_3',   6, 2],
+        kick:         ['kick',      6, 3],
+        kick_air:     ['kick_air',  6, 3],
+        special:      ['special',   8, 4],
+        special_2:    ['special_2', 8, 4],
+        super:        ['super',     8, 5],
+        hit:          ['hit',       6, 5],
+        knockdown:    ['knockdown', 6, 5],
+        victory:      ['victory',   6, 8],
+        taunt:        ['taunt',     6, 8],
+      },
+      animRanges: {
+        idle: 0, walk: 6, walk_back: 12, crouch: 18,
+        punch: 22, punch_2: 28, punch_3: 34,
+        kick: 28, kick_air: 34,
+        special: 34, special_2: 42, super: 42,
+        hit: 50, knockdown: 56, victory: 62, taunt: 68
+      },
+      combos: [
+        { name: "Combo Chapo", inputs: ["punch","punch","kick"], damage: 130 },
+      ],
+      specialMoves: [
+        { name: "Disparo Rapido", input: "D,DF,F+Punch", damage: 120, startup: 12, cost: 20, type: "projectile" },
+      ]
+    },
+    'sobrino': {
+      name: 'Sobrino', color: '#4CAF50',
+      health: 1000, speed: 5, jumpPower: 16, spriteScale: 2.8,
+      spritesheet: {
+        src: 'assets/sprites/sobrino/sobrino.png',
+        mode: 'grid',
+        cellW: 180, cellH: 180, cols: 6, rows: 6
+      },
+      animMap: {
+        idle:         ['idle',      6, 5],
+        walk:         ['walk',      6, 4],
+        walk_back:    ['walk_back', 6, 4],
+        crouch:       ['crouch',    3, 1],
+        punch:        ['punch',     6, 2],
+        punch_2:      ['punch_2',   6, 2],
+        punch_3:      ['punch_3',   6, 2],
+        kick:         ['kick',      6, 3],
+        kick_air:     ['kick_air',  6, 3],
+        special:      ['special',   6, 3],
+        special_2:    ['special_2', 6, 3],
+        super:        ['super',     6, 4],
+        hit:          ['hit',       6, 4],
+        knockdown:    ['knockdown', 6, 4],
+        victory:      ['victory',   6, 6],
+        taunt:        ['taunt',     6, 6],
+      },
+      animRanges: {
+        idle: 0, walk: 6, walk_back: 6, crouch: 12,
+        punch: 12, punch_2: 12, punch_3: 12,
+        kick: 18, kick_air: 18,
+        special: 18, special_2: 18, super: 18,
+        hit: 24, knockdown: 30, victory: 0, taunt: 0
+      },
+      combos: [
+        { name: "Combo Pesado", inputs: ["punch","punch","kick"], damage: 140 },
+      ],
+      specialMoves: [
+        { name: "Golpe Sobrino", input: "D,DF,F+Punch", damage: 130, startup: 14, cost: 25, type: "projectile" },
+      ]
+    },
+    'incinerador': {
+      name: 'Incinerador', color: '#FF5722',
+      health: 1100, speed: 4.5, jumpPower: 15, spriteScale: 2.0,
+      spritesheet: {
+        src: 'assets/sprites/incinerador/incinerador.png',
+        mode: 'row',
+        cellW: 91, cellH: 175, frames: 73
+      },
+      animMap: {
+        idle:         ['idle',      6, 5],
+        walk:         ['walk',      6, 4],
+        walk_back:    ['walk_back', 6, 4],
+        crouch:       ['crouch',    2, 1],
+        punch:        ['punch',     6, 3],
+        punch_2:      ['punch_2',   6, 3],
+        punch_3:      ['punch_3',   6, 3],
+        kick:         ['kick',      6, 3],
+        kick_air:     ['kick_air',  6, 3],
+        special:      ['special',   6, 4],
+        special_2:    ['special_2', 6, 4],
+        super:        ['super',     6, 5],
+        hit:          ['hit',       3, 5],
+        knockdown:    ['knockdown', 2, 5],
+        victory:      ['victory',   6, 8],
+        taunt:        ['taunt',     6, 8],
+      },
+      animRanges: {
+        idle: 0, walk: 6, walk_back: 12, crouch: 18,
+        punch: 20, punch_2: 26, punch_3: 32,
+        kick: 38, kick_air: 44,
+        special: 50, special_2: 56, super: 62,
+        hit: 68, knockdown: 71, victory: 0, taunt: 0
+      },
+      combos: [
+        { name: "Quemadura", inputs: ["punch","kick","special"], damage: 160 },
+      ],
+      specialMoves: [
+        { name: "Bola de Fuego", input: "D,DF,F+Punch", damage: 140, startup: 14, cost: 25, type: "projectile" },
+      ]
+    },
+    'stoker': {
+      name: 'Stoker', color: '#9C27B0',
+      health: 950, speed: 6, jumpPower: 18, spriteScale: 2.2,
+      spritesheet: {
+        src: 'assets/sprites/stoker/stoker.png',
+        mode: 'row',
+        cellW: 151, cellH: 161, frames: 41
+      },
+      animMap: {
+        idle:         ['idle',      4, 5],
+        walk:         ['walk',      6, 4],
+        walk_back:    ['walk_back', 6, 4],
+        crouch:       ['crouch',    2, 1],
+        punch:        ['punch',     6, 3],
+        punch_2:      ['punch_2',   6, 3],
+        punch_3:      ['punch_3',   6, 3],
+        kick:         ['kick',      5, 4],
+        kick_air:     ['kick_air',  5, 4],
+        special:      ['special',   6, 4],
+        special_2:    ['special_2', 6, 4],
+        super:        ['super',     6, 5],
+        hit:          ['hit',       5, 5],
+        knockdown:    ['knockdown', 5, 5],
+        victory:      ['victory',   4, 8],
+        taunt:        ['taunt',     4, 8],
+      },
+      animRanges: {
+        idle: 0, walk: 4, walk_back: 10, crouch: 16,
+        punch: 18, punch_2: 24, punch_3: 30,
+        kick: 36, kick_air: 36,
+        special: 20, special_2: 24, super: 30,
+        hit: 36, knockdown: 36, victory: 0, taunt: 0
+      },
+      combos: [
+        { name: "Combo Veloz", inputs: ["punch","kick","special"], damage: 140 },
+      ],
+      specialMoves: [
+        { name: "Blast de Fuego", input: "D,DF,F+Punch", damage: 130, startup: 14, cost: 25, type: "projectile" },
+      ]
+    },
+    'soldado_elemental': {
+      name: 'Soldado Elemental', color: '#00BCD4',
+      health: 1100, speed: 4.8, jumpPower: 15, spriteScale: 2.0,
+      spritesheet: {
+        src: 'assets/sprites/soldado_elemental/soldado_elemental.png',
+        mode: 'row',
+        cellW: 92, cellH: 222, frames: 10
+      },
+      animMap: {
+        idle:         ['idle',      4, 5],
+        walk:         ['walk',      3, 4],
+        walk_back:    ['walk_back', 3, 4],
+        crouch:       ['crouch',    1, 1],
+        punch:        ['punch',     3, 2],
+        punch_2:      ['punch_2',   3, 2],
+        punch_3:      ['punch_3',   3, 2],
+        kick:         ['kick',      3, 3],
+        kick_air:     ['kick_air',  3, 3],
+        special:      ['special',   3, 4],
+        special_2:    ['special_2', 3, 4],
+        super:        ['super',     3, 5],
+        hit:          ['hit',       2, 5],
+        knockdown:    ['knockdown', 2, 5],
+        victory:      ['victory',   4, 8],
+        taunt:        ['taunt',     4, 8],
+      },
+      animRanges: {
+        idle: 0, walk: 4, walk_back: 7, crouch: 9,
+        punch: 2, punch_2: 2, punch_3: 2,
+        kick: 5, kick_air: 5,
+        special: 2, special_2: 2, super: 2,
+        hit: 8, knockdown: 8, victory: 0, taunt: 0
+      },
+      combos: [
+        { name: "Combo Elemental", inputs: ["punch","kick","special"], damage: 160 },
+      ],
+      specialMoves: [
+        { name: "Disparo Elemental", input: "D,DF,F+Punch", damage: 140, startup: 14, cost: 25, type: "projectile" },
+      ]
+    }
+  }
+};
+
+// ========================
+// SETTINGS MANAGER (localStorage)
+// ========================
+class SettingsManager {
+  constructor() {
+    this.data = { difficulty: 'medium', roundTime: 60, roundCount: 3, volume: 50 };
+    this.load();
+  }
+  load() {
+    try {
+      const saved = localStorage.getItem('kof_settings');
+      if (saved) this.data = JSON.parse(saved);
+    } catch(e) {}
+  }
+  save() {
+    try { localStorage.setItem('kof_settings', JSON.stringify(this.data)); } catch(e) {}
+  }
+  get(key) { return this.data[key]; }
+  set(key, val) { this.data[key] = val; }
+  applyToConfig() {
+    CONFIG.ROUND_TIME = this.data.roundTime;
+  }
+}
+const settingsManager = new SettingsManager();
+
+// ========================
+// SPRITESHEET SYSTEM (ORIGINAL - unchanged)
+// ========================
+class SpriteSheet {
+  constructor(config) {
+    this.config = config;
+    this.image = null;
+    this.loaded = false;
+    this.frames = [];
+  }
+  async load(src) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        this.image = removeGreenScreen(img);
+        this.loaded = true;
+        this.buildFrames();
+        resolve(true);
+      };
+      img.onerror = () => resolve(false);
+      img.src = src;
+      setTimeout(() => resolve(false), 10000);
+    });
+  }
+  buildFrames() {
+    const cfg = this.config;
+    const w = this.image.width;
+    const h = this.image.height;
+    this.frames = [];
+    if (cfg.mode === 'grid') {
+      const cw = cfg.cellW || 100;
+      const ch = cfg.cellH || 100;
+      const cols = cfg.cols || 1;
+      const rows = cfg.rows || 1;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          this.frames.push({ sx: c * cw, sy: r * ch, sw: cw, sh: ch });
+        }
+      }
+    } else if (cfg.mode === 'row') {
+      const cw = cfg.cellW || 100;
+      const ch = cfg.cellH || 100;
+      const count = cfg.frames || Math.floor(w / cw);
+      for (let i = 0; i < count; i++) {
+        this.frames.push({ sx: i * cw, sy: 0, sw: cw, sh: ch });
+      }
+    } else if (cfg.mode === 'rows') {
+      const rows = cfg.rows || [];
+      for (const row of rows) {
+        const rw = row.cellW || (row.w / row.frames);
+        for (let i = 0; i < row.frames; i++) {
+          this.frames.push({ sx: row.x + i * rw, sy: row.y, sw: rw, sh: row.h });
+        }
+      }
+    } else if (cfg.mode === 'custom') {
+      for (const f of (cfg.frames || [])) {
+        this.frames.push({ sx: f.x, sy: f.y, sw: f.w, sh: f.h });
+      }
+    }
+  }
+  getFrame(index) {
+    if (!this.loaded || index < 0 || index >= this.frames.length) return null;
+    return this.frames[index];
+  }
+  draw(ctx, frameIndex, x, y, drawW, drawH, facing) {
+    if (!this.loaded) return false;
+    const frame = this.getFrame(frameIndex);
+    if (!frame) return false;
+    ctx.save();
+    ctx.translate(x, y);
+    if (facing === -1) ctx.scale(-1, 1);
+    ctx.drawImage(this.image, frame.sx, frame.sy, frame.sw, frame.sh, -drawW/2, -drawH, drawW, drawH);
+    ctx.restore();
+    return true;
+  }
+}
+
+class SpriteSheetManager {
+  constructor() {
+    this.sheets = {};
+  }
+  async loadSheet(charKey, config) {
+    if (!config || !config.src) { console.warn("No config/src for", charKey); return false; }
+    const sheet = new SpriteSheet(config);
+    const ok = await sheet.load(config.src);
+    if (ok) {
+      this.sheets[charKey] = sheet;
+      console.log("Spritesheet loaded:", charKey, "frames:", sheet.frames.length, "src:", config.src);
+      return true;
+    }
+    console.warn("Failed to load spritesheet:", charKey, config.src);
+    return false;
+  }
+  hasSheet(charKey) {
+    return this.sheets[charKey] && this.sheets[charKey].loaded;
+  }
+  getSheet(charKey) {
+    return this.sheets[charKey] || null;
+  }
+}
+
+
+// ========================
+// PROCEDURAL AUDIO SYSTEM (Web Audio API)
+// ========================
+class ProceduralAudio {
+  constructor() {
+    this.ctx = null;
+    this.enabled = true;
+    this.volume = 0.5;
+    this.bgmOscillators = [];
+    this.bgmGain = null;
+    this.bgmPlaying = false;
+  }
+  ensureCtx() {
+    if (!this.ctx) {
+      try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+    }
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  }
+  setVolume(v) { this.volume = Math.max(0, Math.min(1, v)); }
+  now() { this.ensureCtx(); return this.ctx ? this.ctx.currentTime : 0; }
+
+  // Punch: short noise burst with high freq
+  playPunch() {
+    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
+    const t = this.now();
+    const bufferSize = this.ctx.sampleRate * 0.08;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    const src = this.ctx.createBufferSource();
+    src.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass'; filter.frequency.value = 2000; filter.Q.value = 0.8;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(this.volume * 0.5, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+    src.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+    src.start(t); src.stop(t + 0.1);
+  }
+  // Kick: deeper noise burst
+  playKick() {
+    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
+    const t = this.now();
+    const bufferSize = this.ctx.sampleRate * 0.12;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    const src = this.ctx.createBufferSource();
+    src.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass'; filter.frequency.value = 800; filter.Q.value = 0.5;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(this.volume * 0.6, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    src.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+    src.start(t); src.stop(t + 0.15);
+    // Add a low thump
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(120, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+    const oscGain = this.ctx.createGain();
+    oscGain.gain.setValueAtTime(this.volume * 0.5, t);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(oscGain); oscGain.connect(this.ctx.destination);
+    osc.start(t); osc.stop(t + 0.15);
+  }
+  // Block: metallic click
+  playBlock() {
+    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
+    const t = this.now();
+    const osc = this.ctx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(800, t);
+    osc.frequency.exponentialRampToValueAtTime(200, t + 0.06);
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(this.volume * 0.25, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(t); osc.stop(t + 0.08);
+    // Noise click
+    const bufferSize = this.ctx.sampleRate * 0.03;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1);
+    const src = this.ctx.createBufferSource(); src.buffer = buffer;
+    const g2 = this.ctx.createGain();
+    g2.gain.setValueAtTime(this.volume * 0.2, t);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+    src.connect(g2); g2.connect(this.ctx.destination);
+    src.start(t); src.stop(t + 0.04);
+  }
+  // Special: oscillating tone
+  playSpecial() {
+    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
+    const t = this.now();
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(300, t);
+    osc.frequency.linearRampToValueAtTime(600, t + 0.1);
+    osc.frequency.linearRampToValueAtTime(400, t + 0.2);
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(this.volume * 0.35, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass'; filter.frequency.value = 2000;
+    osc.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(t); osc.stop(t + 0.35);
+  }
+  // Jump: quick slide up
+  playJump() {
+    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
+    const t = this.now();
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(200, t);
+    osc.frequency.exponentialRampToValueAtTime(600, t + 0.1);
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(this.volume * 0.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(t); osc.stop(t + 0.15);
+  }
+  // Win: triumphant arpeggio
+  playWin() {
+    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
+    const t = this.now();
+    const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+    notes.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      osc.type = 'square'; osc.frequency.value = freq;
+      const gain = this.ctx.createGain();
+      const start = t + i * 0.12;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(this.volume * 0.2, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      osc.start(start); osc.stop(start + 0.35);
+    });
+  }
+  // Round start sound
+  playRound() {
+    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
+    const t = this.now();
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, t);
+    osc.frequency.exponentialRampToValueAtTime(880, t + 0.15);
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(this.volume * 0.25, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(t); osc.stop(t + 0.25);
+    // Second tone
+    const osc2 = this.ctx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(660, t + 0.15);
+    osc2.frequency.exponentialRampToValueAtTime(1320, t + 0.3);
+    const g2 = this.ctx.createGain();
+    g2.gain.setValueAtTime(this.volume * 0.2, t + 0.15);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    osc2.connect(g2); g2.connect(this.ctx.destination);
+    osc2.start(t + 0.15); osc2.stop(t + 0.45);
+  }
+  // Hit sound (generic)
+  playHit() {
+    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
+    const t = this.now();
+    const bufferSize = this.ctx.sampleRate * 0.06;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    const src = this.ctx.createBufferSource(); src.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass'; filter.frequency.value = 1500; filter.Q.value = 0.5;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(this.volume * 0.4, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    src.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+    src.start(t); src.stop(t + 0.08);
+  }
+  // BGM: simple loop using oscillators
+  startBGM() {
+    if (!this.enabled || this.bgmPlaying) return; this.ensureCtx(); if (!this.ctx) return;
+    this.stopBGM();
+    this.bgmPlaying = true;
+    const t = this.now();
+    this.bgmGain = this.ctx.createGain();
+    this.bgmGain.gain.value = this.volume * 0.12;
+    this.bgmGain.connect(this.ctx.destination);
+    // Bass line
+    const bass = this.ctx.createOscillator();
+    bass.type = 'triangle';
+    const bassNotes = [65, 73, 82, 98]; // low notes
+    let noteIdx = 0;
+    const bassGain = this.ctx.createGain();
+    bassGain.gain.value = 1;
+    bass.connect(bassGain); bassGain.connect(this.bgmGain);
+    const schedBass = () => {
+      if (!this.bgmPlaying) return;
+      const now = this.now();
+      bass.frequency.setValueAtTime(bassNotes[noteIdx % bassNotes.length], now);
+      noteIdx++;
+      setTimeout(schedBass, 500);
+    };
+    bass.start(t); schedBass();
+    this.bgmOscillators.push(bass);
+    // Pad (chords)
+    const pad = this.ctx.createOscillator();
+    pad.type = 'sine';
+    pad.frequency.value = 220;
+    const padGain = this.ctx.createGain();
+    padGain.gain.value = 0.5;
+    pad.connect(padGain); padGain.connect(this.bgmGain);
+    pad.start(t);
+    this.bgmOscillators.push(pad);
+    // Arpeggiator
+    const arp = this.ctx.createOscillator();
+    arp.type = 'square';
+    const arpNotes = [262, 330, 392, 523, 392, 330];
+    let arpIdx = 0;
+    const arpGain = this.ctx.createGain();
+    arpGain.gain.value = 0.3;
+    arp.connect(arpGain); arpGain.connect(this.bgmGain);
+    const schedArp = () => {
+      if (!this.bgmPlaying) return;
+      arp.frequency.setValueAtTime(arpNotes[arpIdx % arpNotes.length], this.now());
+      arpIdx++;
+      setTimeout(schedArp, 125);
+    };
+    arp.start(t); schedArp();
+    this.bgmOscillators.push(arp);
+  }
+  stopBGM() {
+    this.bgmPlaying = false;
+    this.bgmOscillators.forEach(o => { try { o.stop(); o.disconnect(); } catch(e) {} });
+    this.bgmOscillators = [];
+    if (this.bgmGain) { try { this.bgmGain.disconnect(); } catch(e) {} }
+    this.bgmGain = null;
+  }
+}
+
+// ========================
+// GREEN SCREEN / CHROMA KEY REMOVER
+// ========================
+function removeGreenScreen(img) {
+  if (!img || !img.complete || (img.naturalWidth === 0 && img.width === 0)) return img;
+  const w = img.naturalWidth || img.width || 64;
+  const h = img.naturalHeight || img.height || 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  try {
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i+1], b = data[i+2];
+      // Pure bright green (common green screen)
+      if (g > 200 && r < 120 && b < 120) {
+        data[i+3] = 0;
+      }
+      // Medium green
+      else if (g > 160 && r < 100 && b < 100) {
+        data[i+3] = 0;
+      }
+      // Greenish-white checkerboard pattern (green+white mixed pixels)
+      else if (g > 180 && r > 140 && b > 140 && g > r + 5 && g > b + 5) {
+        data[i+3] = 0;
+      }
+      // Very light green/white checkerboard average
+      else if (g > 200 && r > 180 && b > 180 && Math.abs(g - r) < 40 && Math.abs(g - b) < 40 && g > 210) {
+        data[i+3] = 0;
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+    const result = new Image();
+    result.src = canvas.toDataURL();
+    return result;
+  } catch(e) {
+    return img;
+  }
+}
+
+// ========================
+// BACKGROUND MANAGER (ORIGINAL - unchanged)
+// ========================
+class BackgroundManager {
+  constructor() {
+    this.layers = [];
+    this.loaded = false;
+  }
+  loadLayer(src, speed, yOffset, scale) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => { this.layers.push({ img: removeGreenScreen(img), speed, yOffset, scale, x: 0 }); resolve(true); };
+      img.onerror = () => resolve(false);
+      img.src = src;
+      setTimeout(() => resolve(false), 10000);
+    });
+  }
+  async loadAll() {
+    const keys = Object.keys(CONFIG.BACKGROUNDS);
+    const pick = keys[Math.floor(Math.random() * keys.length)];
+    await this.loadLayer(CONFIG.BACKGROUNDS[pick], 0, 0, 1.0);
+    this.loaded = this.layers.length > 0;
+  }
+  update(cameraX) {
+    this.layers.forEach(layer => { layer.x = -cameraX * layer.speed; });
+  }
+  draw(ctx) {
+    if (!this.loaded || this.layers.length === 0) {
+      const grad = ctx.createLinearGradient(0, 0, 0, CONFIG.GAME_HEIGHT);
+      grad.addColorStop(0, '#0d0221'); grad.addColorStop(0.6, '#1a0a2e'); grad.addColorStop(1, '#2a1a3e');
+      ctx.fillStyle = grad;
+      ctx.fillRect(-200, 0, CONFIG.GAME_WIDTH + 400, CONFIG.GAME_HEIGHT);
+      ctx.fillStyle = 'rgba(255, 0, 255, 0.1)';
+      ctx.beginPath(); ctx.arc(900, 150, 80, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 0, 255, 0.3)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#150a25';
+      for (let i = 0; i < 15; i++) {
+        const h = 100 + Math.sin(i * 3) * 80 + Math.random() * 50;
+        ctx.fillRect(-200 + i * 110, CONFIG.GROUND_Y - h, 100, h);
+      }
+      return;
+    }
+    this.layers.forEach((layer, idx) => {
+      if (!layer.img) return;
+      const w = CONFIG.GAME_WIDTH * layer.scale;
+      const h = CONFIG.GAME_HEIGHT * layer.scale;
+      const x = layer.x - 200;
+      const y = layer.yOffset;
+      ctx.drawImage(layer.img, x, y, w, h);
+      ctx.drawImage(layer.img, x + w, y, w, h);
+      ctx.drawImage(layer.img, x - w, y, w, h);
+    });
+  }
+}
+
+// ========================
+// ASSET MANAGER (ORIGINAL - unchanged)
+// ========================
+class FrameAssetManager {
+  constructor() {
+    this.frames = {};
+    this.spritesheets = {};
+    this.sheetManager = new SpriteSheetManager();
+    this.loaded = 0;
+    this.total = 0;
+    this.onProgress = null;
+    this.onComplete = null;
+    this.forceReady = false;
+  }
+  getFilename(folder, animFolder, index, format) {
+    const num = String(format.start + index).padStart(format.padding, '0');
+    return `assets/sprites/${folder}/${animFolder}/${format.prefix}${animFolder}${format.sep}${num}${format.suffix}`;
+  }
+  loadImageWithTimeout(src, timeoutMs = 8000) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      let done = false;
+      const finish = (success) => { 
+        if (done) return; 
+        done = true; 
+        if (success && img.complete && (img.naturalWidth > 0 || img.width > 0)) {
+          resolve(removeGreenScreen(img));
+        } else {
+          resolve(null); 
+        }
+      };
+      img.onload = () => finish(true);
+      img.onerror = () => finish(false);
+      img.src = src;
+      setTimeout(() => finish(false), timeoutMs);
+    });
+  }
+  async loadCharacterSpritesheet(charKey) {
+    const char = CONFIG.CHARACTERS[charKey];
+    if (!char || !char.spritesheet) return false;
+    const ok = await this.sheetManager.loadSheet(charKey, char.spritesheet);
+    if (ok) {
+      this.spritesheets[charKey] = this.sheetManager.getSheet(charKey);
+    }
+    return ok;
+  }
+  // NEW: Load flat sequential frames (no subfolders)
+  async loadCharacterFlat(charKey) {
+    const char = CONFIG.CHARACTERS[charKey];
+    this.frames[charKey] = { _flat: [] };
+    const total = char.totalFrames || 0;
+    const promises = [];
+    for (let i = 0; i < total; i++) {
+      this.total++;
+      const num = String(char.format.start + i).padStart(char.format.padding, '0');
+      const src = `assets/${char.folder}/${char.format.prefix}${num}${char.format.suffix}`;
+      const idx = i;
+      const p = this.loadImageWithTimeout(src).then(img => {
+        this.loaded++;
+        this.frames[charKey]._flat[idx] = img;
+        if (this.onProgress) this.onProgress(this.loaded, this.total);
+      });
+      promises.push(p);
+    }
+    await Promise.all(promises);
+    if (this.onComplete) this.onComplete();
+  }
+  async loadCharacter(charKey) {
+    const char = CONFIG.CHARACTERS[charKey];
+    if (!char) return;
+    // Try spritesheet first
+    if (char.spritesheet) {
+      const sheetOk = await this.loadCharacterSpritesheet(charKey);
+      if (sheetOk) {
+        this.frames[charKey] = { _spritesheet: true };
+        if (this.onComplete) this.onComplete();
+        return;
+      }
+    }
+    // NEW: Flat mode (frames in single folder)
+    if (char.frameMode === 'flat') {
+      await this.loadCharacterFlat(charKey);
+      return;
+    }
+    // Original folder-based mode
+    this.frames[charKey] = {};
+    const seenFolders = new Set();
+    const promises = [];
+    for (const [animName, [animFolder, count, duration]] of Object.entries(char.animMap)) {
+      if (seenFolders.has(animFolder)) continue;
+      seenFolders.add(animFolder);
+      this.frames[charKey][animFolder] = new Array(count).fill(null);
+      for (let i = 0; i < count; i++) {
+        this.total++;
+        const src = this.getFilename(char.folder, animFolder, i, char.format);
+        const idx = i;
+        const p = this.loadImageWithTimeout(src).then(img => {
+          this.loaded++;
+          this.frames[charKey][animFolder][idx] = img;
+          if (this.onProgress) this.onProgress(this.loaded, this.total);
+        });
+        promises.push(p);
+      }
+    }
+    await Promise.all(promises);
+    if (this.onComplete) this.onComplete();
+  }
+  getFrame(charKey, animName, frameIndex) {
+    if (!this.frames[charKey]) return null;
+    // Spritesheet mode
+    if (this.frames[charKey]._spritesheet) {
+      const sheet = this.spritesheets[charKey];
+      if (!sheet) return null;
+      const char = CONFIG.CHARACTERS[charKey];
+      if (char && char.animRanges) {
+        const offset = char.animRanges[animName];
+        if (offset !== undefined) {
+          return sheet.getFrame(offset + frameIndex);
+        }
+      }
+      return sheet.getFrame(frameIndex);
+    }
+    // NEW: Flat mode
+    if (this.frames[charKey]._flat) {
+      const char = CONFIG.CHARACTERS[charKey];
+      if (!char || !char.frameRanges || !char.frameRanges[animName]) return null;
+      const range = char.frameRanges[animName];
+      const idx = range.start + (frameIndex % range.count);
+      return this.frames[charKey]._flat[idx] || null;
+    }
+    // Original folder mode
+    const arr = this.frames[charKey][animName];
+    if (!arr) return null;
+    return arr[frameIndex % arr.length];
+  }
+  hasFrames(charKey) {
+    if (!this.frames[charKey]) return false;
+    if (this.frames[charKey]._spritesheet) {
+      return this.spritesheets[charKey] && this.spritesheets[charKey].loaded;
+    }
+    // NEW: Flat mode
+    if (this.frames[charKey]._flat) {
+      return this.frames[charKey]._flat.some(img => img !== null);
+    }
+    for (const folder of Object.keys(this.frames[charKey])) {
+      const arr = this.frames[charKey][folder];
+      if (arr && arr.some(img => img !== null)) return true;
+    }
+    return false;
+  }
+  hasSpritesheet(charKey) {
+    return this.spritesheets[charKey] && this.spritesheets[charKey].loaded;
+  }
+  getSpritesheet(charKey) {
+    return this.spritesheets[charKey] || null;
+  }
+}
+// ========================
+// SPRITE RENDERER (with improved fallback)
+// ========================
+class SpriteRenderer {
+  constructor(charKey, assetManager) {
+    this.charKey = charKey;
+    this.assetManager = assetManager;
+    this.config = CONFIG.CHARACTERS[charKey];
+    this.hasExternalFrames = false;
+    this.hasSpritesheet = false;
+  }
+  async init() {
+    await this.assetManager.loadCharacter(this.charKey);
+    this.hasExternalFrames = this.assetManager.hasFrames(this.charKey);
+    this.hasSpritesheet = this.assetManager.hasSpritesheet(this.charKey);
+  }
+  drawFallback(ctx, animState, frameIndex, x, y, facing, scale=1.2) {
+    const char = this.config;
+    const anim = char.animMap[animState];
+    if (!anim) return;
+    const [folder, count, duration] = anim;
+    const frame = frameIndex % count;
+
+    // Base dimensions
+    const W = 52 * scale;
+    const H = 96 * scale;
+    const t = frame / Math.max(count - 1, 1); // 0..1 normalized frame progress
+
+    // Per-state animation offsets
+    const bodySway   = animState === 'idle'     ? Math.sin(frame * 0.9) * 2.5 : 0;
+    const crouchOff  = animState === 'crouch'   ? H * 0.22 : 0;
+    const walkLean   = animState === 'walk'      ? Math.sin(frame * 1.4) * 4 : 0;
+    const walkBackL  = animState === 'walk_back' ? -Math.sin(frame * 1.4) * 4 : 0;
+    const airOff     = !['idle','walk','walk_back','crouch','hit','knockdown','victory','taunt'].includes(animState) && animState.includes('jump') ? -H * 0.05 * Math.sin(t * Math.PI) : 0;
+    const hitShake   = (animState === 'hit')       ? (Math.random() - 0.5) * 6 * (1 - t) : 0;
+    const knockAngle = animState === 'knockdown'   ? t * 0.7 : 0;
+    const victoryBob = animState === 'victory'     ? Math.abs(Math.sin(frame * 0.5)) * -5 : 0;
+
+    // Punch / kick limb extension
+    const isPunch = animState.includes('punch');
+    const isKick  = animState.includes('kick');
+    const isSpecial = animState === 'special' || animState === 'special_2' || animState === 'super';
+    // attack arc: extend on first half, retract on second half
+    const atkArc = Math.sin(Math.min(t, 1) * Math.PI);
+
+    const totalLean = bodySway + walkLean + walkBackL + hitShake + airOff;
+
+    ctx.save();
+    ctx.translate(x + hitShake, y + crouchOff + victoryBob);
+    if (facing === -1) ctx.scale(-1, 1);
+    ctx.rotate(knockAngle);
+
+    // ── GLOW AURA (special/super) ──────────────────────────────────────────
+    if (isSpecial) {
+      const pulse = 0.3 + Math.sin(frame * 0.7) * 0.15;
+      ctx.save();
+      ctx.globalAlpha = pulse;
+      ctx.shadowColor = char.color;
+      ctx.shadowBlur = 30 * scale;
+      ctx.fillStyle = char.color;
+      ctx.beginPath();
+      ctx.ellipse(0, -H * 0.5, W * 0.75, H * 0.55, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+
+    // ── BODY SILHOUETTE (torso) ────────────────────────────────────────────
+    // Gradient fill using char color
+    const bodyGrad = ctx.createLinearGradient(-W*0.35, -H*0.85, W*0.35, -H*0.2);
+    bodyGrad.addColorStop(0, char.color);
+    bodyGrad.addColorStop(1, adjustColor(char.color, -50));
+    ctx.fillStyle = bodyGrad;
+
+    // Torso shape: rounded rect
+    const torsoX = -W * 0.28 + totalLean * 0.3;
+    const torsoY = -H * 0.78 + crouchOff * 0.5;
+    const torsoW = W * 0.56;
+    const torsoH = H * 0.42 - crouchOff * 0.3;
+    const r = 6 * scale;
+    ctx.beginPath();
+    ctx.moveTo(torsoX + r, torsoY);
+    ctx.lineTo(torsoX + torsoW - r, torsoY);
+    ctx.quadraticCurveTo(torsoX + torsoW, torsoY, torsoX + torsoW, torsoY + r);
+    ctx.lineTo(torsoX + torsoW, torsoY + torsoH - r);
+    ctx.quadraticCurveTo(torsoX + torsoW, torsoY + torsoH, torsoX + torsoW - r, torsoY + torsoH);
+    ctx.lineTo(torsoX + r, torsoY + torsoH);
+    ctx.quadraticCurveTo(torsoX, torsoY + torsoH, torsoX, torsoY + torsoH - r);
+    ctx.lineTo(torsoX, torsoY + r);
+    ctx.quadraticCurveTo(torsoX, torsoY, torsoX + r, torsoY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Torso outline
+    ctx.strokeStyle = adjustColor(char.color, 60);
+    ctx.lineWidth = 1.5 * scale;
+    ctx.stroke();
+
+    // Belt / waist line detail
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = scale;
+    ctx.beginPath();
+    ctx.moveTo(torsoX + 4, torsoY + torsoH - 6 * scale);
+    ctx.lineTo(torsoX + torsoW - 4, torsoY + torsoH - 6 * scale);
+    ctx.stroke();
+
+    // ── HEAD ──────────────────────────────────────────────────────────────
+    const headR  = 13 * scale;
+    const headX  = totalLean * 0.5;
+    const headY2 = -H + headR * 1.1 + bodySway;
+    const headGrad = ctx.createRadialGradient(headX - 3, headY2 - 3, 1, headX, headY2, headR);
+    headGrad.addColorStop(0, '#ffe0c0');
+    headGrad.addColorStop(1, '#cc9966');
+    ctx.fillStyle = headGrad;
+    ctx.beginPath();
+    ctx.arc(headX, headY2, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Helmet / hair strip
+    ctx.fillStyle = char.color;
+    ctx.beginPath();
+    ctx.arc(headX, headY2, headR, Math.PI, 0);
+    ctx.fill();
+    // Visor stripe
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(headX - headR * 0.6, headY2 - headR * 0.15, headR * 1.2, headR * 0.3);
+
+    // Eyes
+    ctx.fillStyle = (animState === 'hit' || animState === 'knockdown') ? '#ff4444' : '#fff';
+    ctx.beginPath(); ctx.arc(headX + headR * 0.35, headY2 + 1, 3 * scale, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(headX + headR * 0.35 + 1, headY2 + 1, 1.5 * scale, 0, Math.PI * 2); ctx.fill();
+
+    // ── LEGS ──────────────────────────────────────────────────────────────
+    const legW = 11 * scale;
+    const legH = H * 0.38 - crouchOff * 0.8;
+    const legY  = -H * 0.36 + crouchOff * 0.5;
+    const legColor = adjustColor(char.color, -40);
+
+    // Walk swing
+    const walkSwing = (animState === 'walk' || animState === 'walk_back') ? Math.sin(frame * 1.4) * 10 : 0;
+
+    // Left leg
+    ctx.fillStyle = legColor;
+    ctx.save();
+    ctx.translate(-W * 0.14, legY);
+    ctx.rotate(walkSwing * 0.025);
+    ctx.fillRect(-legW * 0.5, 0, legW, legH);
+    ctx.restore();
+
+    // Right leg
+    ctx.save();
+    ctx.translate(W * 0.14, legY);
+    ctx.rotate(-walkSwing * 0.025);
+    ctx.fillRect(-legW * 0.5, 0, legW, legH);
+    ctx.restore();
+
+    // Kick leg extension
+    if (isKick && atkArc > 0.1) {
+      ctx.fillStyle = char.color;
+      ctx.save();
+      ctx.translate(W * 0.14, legY);
+      const kickLen = W * 0.9 * atkArc;
+      ctx.rotate(-0.4);
+      ctx.fillRect(0, 0, kickLen, legW * 0.8);
+      // Boot glow
+      ctx.fillStyle = `rgba(255,120,0,${0.6 * atkArc})`;
+      ctx.beginPath(); ctx.arc(kickLen, legW * 0.4, 7 * scale, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    // ── ARMS ──────────────────────────────────────────────────────────────
+    const armW = 10 * scale;
+    const armH = H * 0.32;
+    const armY = torsoY + 6 * scale;
+
+    // Left arm (back)
+    ctx.fillStyle = adjustColor(char.color, -20);
+    ctx.save();
+    ctx.translate(-W * 0.32, armY);
+    const leftSwing = (animState === 'walk' || animState === 'walk_back') ? -walkSwing * 0.02 : 0;
+    ctx.rotate(leftSwing - (isPunch ? atkArc * 0.3 : 0));
+    ctx.fillRect(-armW * 0.5, 0, armW, armH);
+    ctx.restore();
+
+    // Right arm (attack arm)
+    ctx.fillStyle = char.color;
+    ctx.save();
+    ctx.translate(W * 0.32, armY);
+    if (isPunch) {
+      // Punch: arm extends forward
+      const punchLen = W * 0.85 * atkArc;
+      ctx.rotate(-0.25);
+      ctx.fillRect(0, armW * 0.1, punchLen + armW, armW * 0.85);
+      // Fist glow
+      if (atkArc > 0.3) {
+        ctx.fillStyle = `rgba(255,220,0,${0.5 + Math.random() * 0.3})`;
+        ctx.beginPath(); ctx.arc(punchLen + armW, armW * 0.5, 7 * scale, 0, Math.PI * 2); ctx.fill();
+      }
+    } else {
+      const rightSwing = (animState === 'walk' || animState === 'walk_back') ? walkSwing * 0.02 : 0;
+      ctx.rotate(rightSwing);
+      ctx.fillRect(-armW * 0.5, 0, armW, armH);
+    }
+    ctx.restore();
+
+    // ── HIT FLASH overlay ─────────────────────────────────────────────────
+    if (animState === 'hit' || animState === 'knockdown') {
+      ctx.fillStyle = `rgba(255,30,30,${0.35 * (1 - t)})`;
+      ctx.fillRect(-W * 0.55, -H, W * 1.1, H);
+    }
+
+    // ── VICTORY sparkle ───────────────────────────────────────────────────
+    if (animState === 'victory' && frame % 4 === 0) {
+      for (let i = 0; i < 3; i++) {
+        ctx.fillStyle = `rgba(255,215,0,${Math.random() * 0.7 + 0.3})`;
+        const sx = (Math.random() - 0.5) * W * 1.5;
+        const sy = -H * (0.3 + Math.random() * 0.8);
+        ctx.beginPath(); ctx.arc(sx, sy, 3 * scale, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    // ── NO-SPRITE badge ───────────────────────────────────────────────────
+    // Small "?" pill top-right of the character
+    ctx.save();
+    ctx.globalAlpha = 0.65;
+    const bx = W * 0.2, by = -H - 4 * scale;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.beginPath();
+    const bw = 18 * scale, bh = 13 * scale, br = 4;
+    if (ctx.roundRect) {
+      ctx.roundRect(bx, by - bh, bw, bh, br);
+    } else {
+      ctx.rect(bx, by - bh, bw, bh);
+    }
+    ctx.fill();
+    ctx.fillStyle = '#ffd700';
+    ctx.font = `bold ${Math.round(9 * scale)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('?', bx + 9 * scale, by);
+    ctx.restore();
+
+    // ── NAME TAG ──────────────────────────────────────────────────────────
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    const shortName = char.name.length > 8 ? char.name.slice(0, 7) + '.' : char.name;
+    ctx.font = `bold ${Math.round(8 * scale)}px "Orbitron", monospace`;
+    ctx.textAlign = 'center';
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillText(shortName.toUpperCase(), 1, -H - 16 * scale + 1);
+    ctx.fillStyle = char.color;
+    ctx.fillText(shortName.toUpperCase(), 0, -H - 16 * scale);
+    ctx.restore();
+
+    ctx.restore();
+  }
+  draw(ctx, animState, frameIndex, x, y, facing, scaleOverride) {
+    // spriteScale = visual size multiplier relative to a 80x120 game-unit base character
+    const finalScale = scaleOverride || (this.config.spriteScale || 1.0);
+    const anim = this.config.animMap[animState];
+    if (!anim) return;
+    const [folder, count, duration] = anim;
+    const actualFrame = frameIndex % count;
+    // Sprite sheet size: base 100x100 * finalScale
+    const w = 100 * finalScale;
+    const h = 100 * finalScale;
+    if (this.hasSpritesheet) {
+      const sheet = this.assetManager.getSpritesheet(this.charKey);
+      if (sheet) {
+        let globalIndex = actualFrame;
+        if (this.config.animRanges && this.config.animRanges[animState] !== undefined) {
+          globalIndex = this.config.animRanges[animState] + actualFrame;
+        }
+        const totalFrames = sheet.frames ? sheet.frames.length : 0;
+        if (totalFrames > 0) {
+          globalIndex = ((globalIndex % totalFrames) + totalFrames) % totalFrames;
+        }
+        if (globalIndex >= 0 && sheet.draw(ctx, globalIndex, x, y, w, h, facing)) {
+          return;
+        }
+      }
+    }
+    if (this.hasExternalFrames) {
+      const frameData = this.assetManager.getFrame(this.charKey, folder, actualFrame);
+      if (frameData && frameData instanceof Image) {
+        ctx.save();
+        ctx.translate(x, y);
+        if (facing === -1) ctx.scale(-1, 1);
+        ctx.translate(-w/2, -h);
+        ctx.drawImage(frameData, 0, 0, w, h);
+        ctx.restore();
+        return;
+      }
+    }
+    // Fallback: finalScale drives all dimensions
+    this.drawFallback(ctx, animState, frameIndex, x, y, facing, finalScale);
+  }
+}
+
+function adjustColor(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+  const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amount));
+  const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount));
+  return `rgb(${r},${g},${b})`;
+}
+
+
+// ========================
+// INPUT SYSTEM (ULTRA RESPONSIVE)
+// ========================
+class InputSystem {
+  constructor() {
+    this.keys = {};
+    this.joystick = { active:false, dx:0, dy:0, originX:0, originY:0, touchId:null };
+    this.gyro = { enabled:false, x:0, y:0 };
+    this.touchButtons = { punch:false, kick:false, special:false, block:false };
+    this.deadzone = 0.12;
+    this.maxDist = 60;
+    this.sensitivity = 1.0;
+    this.setupKeyboard();
+    this.setupTouch();
+    this.setupGyro();
+  }
+  setupKeyboard() {
+    window.addEventListener('keydown', e => {
+      this.keys[e.code] = true;
+      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyP','Escape'].includes(e.code)) e.preventDefault();
+    });
+    window.addEventListener('keyup', e => this.keys[e.code] = false);
+  }
+  setupTouch() {
+    const zone = document.getElementById('joystickZone');
+    const stick = document.getElementById('joystickStick');
+    if (!zone) return;
+
+    const updateStick = (dx, dy) => {
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      let nx = dx, ny = dy;
+      if (dist > this.maxDist) { nx = (dx/dist)*this.maxDist; ny = (dy/dist)*this.maxDist; }
+      stick.style.transform = `translate(calc(-50% + ${nx}px), calc(-50% + ${ny}px))`;
+      const mag = dist / this.maxDist;
+      if (mag < this.deadzone) { this.joystick.dx = 0; this.joystick.dy = 0; }
+      else {
+        const scaled = (mag - this.deadzone) / (1 - this.deadzone);
+        const curved = Math.pow(scaled, this.sensitivity);
+        this.joystick.dx = (dx/dist) * curved;
+        this.joystick.dy = (dy/dist) * curved;
+      }
+    };
+
+    zone.addEventListener('touchstart', e => {
+      e.preventDefault();
+      if (this.joystick.active) return;
+      const t = e.changedTouches[0];
+      const rect = zone.getBoundingClientRect();
+      this.joystick.originX = rect.left + rect.width/2;
+      this.joystick.originY = rect.top + rect.height/2;
+      this.joystick.active = true;
+      this.joystick.touchId = t.identifier;
+      stick.classList.add('active');
+      updateStick(t.clientX - this.joystick.originX, t.clientY - this.joystick.originY);
+    }, {passive:false});
+
+    zone.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (!this.joystick.active) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (t.identifier === this.joystick.touchId) {
+          updateStick(t.clientX - this.joystick.originX, t.clientY - this.joystick.originY);
+          break;
+        }
+      }
+    }, {passive:false});
+
+    const endJoystick = (e) => {
+      if (!this.joystick.active) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === this.joystick.touchId) {
+          this.joystick.active = false; this.joystick.touchId = null;
+          this.joystick.dx = 0; this.joystick.dy = 0;
+          stick.style.transform = 'translate(-50%, -50%)';
+          stick.classList.remove('active');
+          break;
+        }
+      }
+    };
+    zone.addEventListener('touchend', endJoystick);
+    zone.addEventListener('touchcancel', endJoystick);
+
+    const setupBtn = (id, key) => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      const press = (e) => { if(e) { e.preventDefault(); e.stopPropagation(); } this.touchButtons[key] = true; btn.classList.add('pressed'); };
+      const release = (e) => { if(e) { e.preventDefault(); e.stopPropagation(); } this.touchButtons[key] = false; btn.classList.remove('pressed'); };
+      btn.addEventListener('touchstart', press, {passive:false});
+      btn.addEventListener('touchend', release, {passive:false});
+      btn.addEventListener('touchcancel', release);
+      // Also support mouse for desktop testing
+      btn.addEventListener('mousedown', press);
+      btn.addEventListener('mouseup', release);
+      btn.addEventListener('mouseleave', release);
+    };
+    setupBtn('btnPunch', 'punch');
+    setupBtn('btnKick', 'kick');
+    setupBtn('btnSpecial', 'special');
+    setupBtn('btnBlock', 'block');
+  }
+  setupGyro() {
+    if (typeof DeviceOrientationEvent === 'undefined') return;
+    const handler = e => {
+      this.gyro.x = Math.max(-1, Math.min(1, (e.gamma || 0) / 45));
+      this.gyro.y = Math.max(-1, Math.min(1, (e.beta || 0) / 45));
+    };
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      document.getElementById('game-container').addEventListener('click', () => {
+        DeviceOrientationEvent.requestPermission().then(state => {
+          if (state === 'granted') { window.addEventListener('deviceorientation', handler); this.gyro.enabled = true; }
+        }).catch(()=>{});
+      }, {once:true});
+    } else {
+      window.addEventListener('deviceorientation', handler);
+      this.gyro.enabled = true;
+    }
+  }
+  getMovement(player) {
+    if (player === 1) {
+      const jx = this.joystick.dx, jy = this.joystick.dy;
+      const gx = this.gyro.enabled ? this.gyro.x : 0;
+      const gy = this.gyro.enabled ? this.gyro.y : 0;
+      let dx = 0, dy = 0;
+      if (this.keys['KeyA'] || this.keys['ArrowLeft'] || jx < -0.3 || gx < -0.3) dx = -1;
+      if (this.keys['KeyD'] || this.keys['ArrowRight'] || jx > 0.3 || gx > 0.3) dx = 1;
+      if (this.keys['KeyW'] || this.keys['ArrowUp'] || jy < -0.5 || gy < -0.5) dy = -1;
+      if (this.keys['KeyS'] || this.keys['ArrowDown'] || jy > 0.5 || gy > 0.5) dy = 1;
+      return { dx, dy, rawX: jx || gx, rawY: jy || gy };
+    } else {
+      let dx = 0, dy = 0;
+      if (this.keys['Numpad4']) dx = -1;
+      if (this.keys['Numpad6']) dx = 1;
+      if (this.keys['Numpad8']) dy = -1;
+      if (this.keys['Numpad5'] || this.keys['Numpad2']) dy = 1;
+      return { dx, dy, rawX: dx, rawY: dy };
+    }
+  }
+  getButtons(player) {
+    if (player === 1) {
+      return {
+        punch: this.keys['KeyJ'] || this.keys['KeyZ'] || this.touchButtons.punch,
+        kick: this.keys['KeyK'] || this.keys['KeyX'] || this.touchButtons.kick,
+        special: this.keys['KeyL'] || this.keys['KeyC'] || this.touchButtons.special,
+        block: this.keys['KeyI'] || this.keys['KeyB'] || this.touchButtons.block,
+      };
+    } else {
+      return {
+        punch: this.keys['Numpad1'] || this.keys['KeyV'],
+        kick: this.keys['Numpad2'] || this.keys['KeyN'],
+        special: this.keys['Numpad3'] || this.keys['KeyM'],
+        block: this.keys['Numpad0'] || this.keys['KeyH'],
+      };
+    }
+  }
+}// ========================
+// COMBO DETECTOR (BUG FIX 4: added reset)
+// ========================
+class ComboDetector {
+  constructor(charData) {
+    this.charData = charData;
+    this.history = [];
+    this.maxHistory = 10;
+    this.timeout = 800;
+    this.lastTime = 0;
+  }
+  reset() { this.history = []; this.lastTime = 0; }
+  record(moveKey) {
+    const now = performance.now();
+    if (now - this.lastTime > this.timeout) this.history = [];
+    this.history.push(moveKey);
+    if (this.history.length > this.maxHistory) this.history.shift();
+    this.lastTime = now;
+  }
+  detect() {
+    if (!this.charData.combos) return null;
+    for (const combo of this.charData.combos) {
+      if (this.matches(combo.inputs)) return combo;
+    }
+    return null;
+  }
+  matches(seq) {
+    if (this.history.length < seq.length) return false;
+    const start = this.history.length - seq.length;
+    for (let i = 0; i < seq.length; i++) {
+      if (this.history[start + i] !== seq[i]) return false;
+    }
+    return true;
+  }
+}
+
+// ========================
+// SPECIAL MOVE DETECTOR (BUG FIX 4: added reset)
+// ========================
+class SpecialMoveDetector {
+  constructor(charData) {
+    this.charData = charData;
+    this.buffer = [];
+    this.bufferTime = 400;
+    this.lastTime = 0;
+    this.facing = 1;
+  }
+  reset() { this.buffer = []; this.lastTime = 0; }
+  absToRel(dx, dy) {
+    let dir = '';
+    if (dy < -0.5) dir += 'U';
+    else if (dy > 0.5) dir += 'D';
+    if (this.facing === 1) {
+      if (dx < -0.3) dir += 'B';
+      else if (dx > 0.3) dir += 'F';
+    } else {
+      if (dx < -0.3) dir += 'F';
+      else if (dx > 0.3) dir += 'B';
+    }
+    return dir || 'N';
+  }
+  recordDirection(dx, dy) {
+    const now = performance.now();
+    if (now - this.lastTime > this.bufferTime) this.buffer = [];
+    const dir = this.absToRel(dx, dy);
+    if (dir !== 'N' && (this.buffer.length === 0 || this.buffer[this.buffer.length-1] !== dir)) {
+      this.buffer.push(dir);
+      this.lastTime = now;
+    }
+  }
+  recordButton(btn) {
+    const now = performance.now();
+    if (now - this.lastTime > this.bufferTime) this.buffer = [];
+    this.buffer.push(btn);
+    this.lastTime = now;
+  }
+  setFacing(f) { this.facing = f; }
+  detect() {
+    if (!this.charData.specialMoves) return null;
+    for (const move of this.charData.specialMoves) {
+      if (this.matches(move.input)) return move;
+    }
+    return null;
+  }
+  matches(pattern) {
+    const parts = pattern.split('+');
+    const button = parts[parts.length-1].trim();
+    const dirs = parts.slice(0, -1).join('+').split(',').map(s => s.trim());
+    if (this.buffer.length < dirs.length + 1) return false;
+    const start = this.buffer.length - dirs.length - 1;
+    for (let i = 0; i < dirs.length; i++) {
+      if (this.buffer[start + i] !== dirs[i]) return false;
+    }
+    if (this.buffer[this.buffer.length - 1] !== button) return false;
+    return true;
+  }
+  clear() { this.buffer = []; }
+}
+
+// ========================
+// DAMAGE NUMBERS (ORIGINAL - unchanged)
+// ========================
+class DamageNumber {
+  constructor(x, y, damage, options={}) {
+    this.x = x; this.y = y;
+    this.damage = damage;
+    this.isBlocked = options.isBlocked || false;
+    this.isCounter = options.isCounter || false;
+    this.isSuper = options.isSuper || false;
+    this.isCritical = damage > 150;
+    this.vx = (Math.random() - 0.5) * 4;
+    this.vy = -3 - Math.random() * 2;
+    this.life = 50;
+    this.maxLife = 50;
+    this.scale = 1;
+  }
+  update() {
+    this.life--;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vy += 0.12;
+    const p = 1 - (this.life / this.maxLife);
+    this.scale = 1 + p * 0.4;
+  }
+  draw(ctx) {
+    const p = 1 - (this.life / this.maxLife);
+    const alpha = Math.max(0, 1 - p * 1.3);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(this.x, this.y);
+    ctx.scale(this.scale, this.scale);
+    let text, color, size;
+    if (this.isBlocked) { text = 'BLOCK'; color = '#8888ff'; size = 22; }
+    else if (this.isCounter) { text = `COUNTER! ${this.damage}`; color = '#ff3333'; size = 28; }
+    else if (this.isSuper) { text = `${this.damage}`; color = '#ff00ff'; size = 32; }
+    else if (this.isCritical) { text = `${this.damage}!`; color = '#ff0000'; size = 28; }
+    else { text = `${this.damage}`; color = '#ffcc00'; size = 22; }
+    ctx.font = `bold ${size}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillText(text, 2, 2);
+    ctx.fillStyle = color;
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
+  }
+  isAlive() { return this.life > 0; }
+}
+
+class DamageNumberManager {
+  constructor() { this.numbers = []; }
+  add(x, y, damage, options) { this.numbers.push(new DamageNumber(x, y, damage, options)); }
+  update() {
+    for (let i = this.numbers.length - 1; i >= 0; i--) {
+      this.numbers[i].update();
+      if (!this.numbers[i].isAlive()) this.numbers.splice(i, 1);
+    }
+  }
+  draw(ctx) { this.numbers.forEach(n => n.draw(ctx)); }
+}
+
+// ========================
+// PARTICLES (improved with hit effects)
+// ========================
+class ParticleSystem {
+  constructor() { this.particles = []; }
+  emit(x, y, color, count=10, type='burst') {
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
+      const speed = 2 + Math.random() * 4;
+      this.particles.push({
+        x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - (type === 'hit' ? 2 : 0),
+        life: 20 + Math.random() * 20, maxLife: 40, color, size: 3 + Math.random() * 5, type
+      });
+    }
+  }
+  emitHitSparks(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+      const angle = -Math.PI/2 + (Math.random() - 0.5) * Math.PI;
+      const speed = 3 + Math.random() * 6;
+      this.particles.push({
+        x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+        life: 15 + Math.random() * 10, maxLife: 25, color, size: 2 + Math.random() * 3, type: 'spark'
+      });
+    }
+  }
+  update() {
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.life--;
+      p.x += p.vx; p.y += p.vy;
+      p.vy += 0.15;
+      p.size *= 0.96;
+      if (p.life <= 0) this.particles.splice(i, 1);
+    }
+  }
+  draw(ctx) {
+    this.particles.forEach(p => {
+      const alpha = p.life / p.maxLife;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = p.color;
+      if (p.type === 'spark') {
+        // Line-like spark
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = p.size * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x - p.vx * 2, p.y - p.vy * 2);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ========================
+// PROJECTILES (ORIGINAL - unchanged)
+// ========================
+class Projectile {
+  constructor(x, y, facing, owner, config, spriteImg) {
+    this.x = x; this.y = y; this.facing = facing; this.owner = owner;
+    this.speed = 9; this.damage = config.damage || 100;
+    this.life = 70; this.width = 50; this.height = 35; this.hit = false;
+    this.spriteImg = spriteImg;
+    this.trail = [];
+    this.gravity = 0;
+    this.vy = 0;
+  }
+  update() {
+    this.x += this.speed * this.facing;
+    this.y += this.vy;
+    this.vy += this.gravity;
+    this.life--;
+    this.trail.push({ x: this.x, y: this.y, alpha: 1.0 });
+    if (this.trail.length > 8) this.trail.shift();
+    for (const t of this.trail) t.alpha -= 0.12;
+    this.trail = this.trail.filter(t => t.alpha > 0);
+    if (this.y > CONFIG.GROUND_Y - 20) {
+      this.y = CONFIG.GROUND_Y - 20;
+      this.vy = -this.vy * 0.3;
+      this.life -= 10;
+    }
+    if (this.x < -100 || this.x > CONFIG.GAME_WIDTH + 100) {
+      this.life = 0;
+    }
+  }
+  draw(ctx) {
+    for (const t of this.trail) {
+      ctx.globalAlpha = t.alpha * 0.4;
+      ctx.fillStyle = '#ffaa00';
+      ctx.beginPath(); ctx.arc(t.x, t.y, 8, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    if (this.spriteImg) {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      if (this.facing === -1) ctx.scale(-1, 1);
+      ctx.drawImage(this.spriteImg, -25, -17, 50, 35);
+      ctx.restore();
+      return;
+    }
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    if (this.facing === -1) ctx.scale(-1, 1);
+    const flicker = 0.7 + Math.random() * 0.3;
+    ctx.shadowColor = '#ff6600'; ctx.shadowBlur = 20;
+    ctx.fillStyle = `rgba(255, ${80 + Math.random()*120}, 0, ${flicker})`;
+    ctx.beginPath(); ctx.ellipse(0, 0, 25, 14, 0, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = `rgba(255, 255, 200, ${flicker})`;
+    ctx.beginPath(); ctx.ellipse(4, 0, 16, 8, 0, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  getHitbox() { return { x: this.x - 25, y: this.y - 14, w: 50, h: 28 }; }
+}
+
+// ========================
+// HITSTOP with SCREEN SHAKE
+// ========================
+class HitStop {
+  constructor() {
+    this.active = false;
+    this.frames = 0;
+    this.maxFrames = 0;
+    this.shakeX = 0;
+    this.shakeY = 0;
+  }
+  trigger(duration) {
+    this.active = true;
+    this.frames = duration;
+    this.maxFrames = duration;
+  }
+  update() {
+    if (this.active) {
+      this.frames--;
+      if (this.frames <= 0) { this.active = false; this.shakeX = 0; this.shakeY = 0; }
+    }
+  }
+  isActive() { return this.active; }
+  getShake() {
+    if (!this.active) return { x: 0, y: 0 };
+    const intensity = this.frames / this.maxFrames;
+    return {
+      x: (Math.random() - 0.5) * 8 * intensity,
+      y: (Math.random() - 0.5) * 8 * intensity
+    };
+  }
+  getScreenShake(damage) {
+    if (!this.active) return { x: 0, y: 0 };
+    const base = Math.min(damage / 30, CONFIG.SCREEN_SHAKE_BASE);
+    const intensity = this.frames / this.maxFrames;
+    return {
+      x: (Math.random() - 0.5) * base * 2 * intensity,
+      y: (Math.random() - 0.5) * base * intensity
+    };
+  }
+}
+
+
+// ========================
+// CHARACTER (with all bug fixes and new features)
+// ========================
+class Character {
+  constructor(charKey, x, y, playerNum, assetManager, gameRef, audioManager) {
+    this.charKey = charKey;
+    this.charData = CONFIG.CHARACTERS[charKey];
+    this.x = x; this.y = y;
+    this.playerNum = playerNum;
+    this.facing = playerNum === 1 ? 1 : -1;
+    this.gameRef = gameRef;
+    this.audioManager = audioManager;
+
+    this.spriteRenderer = new SpriteRenderer(charKey, assetManager);
+    this.comboDetector = new ComboDetector(this.charData);
+    this.specialDetector = new SpecialMoveDetector(this.charData);
+    this.specialDetector.setFacing(this.facing);
+
+    this.vx = 0; this.vy = 0;
+    this.onGround = true;
+    this.crouching = false;
+    this.blocking = false;
+    this.invincible = false;
+
+    this.health = this.charData.health;
+    this.maxHealth = this.charData.health;
+    this.meter = 0;
+    this.maxMeter = CONFIG.MAX_METER;
+
+    this.animState = 'idle';
+    this.frameIndex = 0;
+    this.frameTimer = 0;
+
+    this.hitboxes = [];
+    this.hurtboxes = [];
+    this.hitConnect = false;
+    this.attackCooldown = 0;
+
+    // BUG FIX 2: Frame-based attack system
+    this.attackFrame = 0;
+    this.attackHitboxData = null;
+
+    this.stunTimer = 0;
+    this.knockdownTimer = 0;
+    this.dashTimer = 0;
+    this.specialTimer = 0;
+    this.isDead = false;
+    this.projectiles = [];
+
+    // Combo counter tracking
+    this.comboCount = 0;
+    this.comboTimer = 0;
+    this.lastAttacker = null;
+  }
+
+  async init() {
+    await this.spriteRenderer.init();
+  }
+
+  update(input, opponent, particles, damageNumbers, hitStop) {
+    if (this.isDead) {
+      this.animState = 'knockdown';
+      this.updateAnimation();
+      return;
+    }
+
+    if (!this.stunTimer && !this.knockdownTimer && !this.specialTimer) {
+      this.facing = opponent.x > this.x ? 1 : -1;
+      this.specialDetector.setFacing(this.facing);
+    }
+
+    if (this.stunTimer > 0) this.stunTimer--;
+    if (this.knockdownTimer > 0) this.knockdownTimer--;
+    if (this.attackCooldown > 0) this.attackCooldown--;
+    if (this.dashTimer > 0) this.dashTimer--;
+    if (this.specialTimer > 0) this.specialTimer--;
+
+    // BUG FIX 2: Frame-based hitbox activation
+    if (this.attackHitboxData && !this.attackHitboxData.isProjectile) {
+      // Only non-projectile attacks use this path; projectile attackFrame is managed in updateHitboxes()
+      this.attackFrame++;
+      const a = this.attackHitboxData;
+      if (this.attackFrame >= a.activateFrame && this.attackFrame < a.deactivateFrame) {
+        if (this.hitboxes.length > 0) this.hitboxes[0].active = true;
+      } else if (this.attackFrame >= a.deactivateFrame) {
+        this.hitboxes = [];
+        this.attackHitboxData = null;
+      }
+    }
+
+    // Combo timer decay
+    if (this.comboTimer > 0) {
+      this.comboTimer--;
+      if (this.comboTimer <= 0) {
+        this.comboCount = 0;
+        if (this.gameRef) this.gameRef.updateComboDisplay(this.playerNum, 0);
+      }
+    }
+
+    this.projectiles.forEach(p => p.update());
+    this.projectiles = this.projectiles.filter(p => p.life > 0 && !p.hit);
+
+    this.projectiles.forEach(p => {
+      const ph = p.getHitbox();
+      const oh = opponent.getHurtbox();
+      if (rectIntersect(ph, oh) && !p.hit) {
+        p.hit = true;
+        opponent.takeDamage(p.damage, this, 'special', damageNumbers, particles, hitStop);
+        particles.emit(p.x, p.y, '#ff6600', 15, 'hit');
+      }
+    });
+
+    const movement = input.getMovement(this.playerNum);
+    const buttons = input.getButtons(this.playerNum);
+
+    if (this.stunTimer || this.knockdownTimer || this.specialTimer) {
+      this.applyPhysics();
+      this.updateAnimation();
+      return;
+    }
+
+    if (Math.abs(movement.rawX) > 0.2 || Math.abs(movement.rawY) > 0.2) {
+      this.specialDetector.recordDirection(movement.rawX, movement.rawY);
+    }
+
+    // BUG FIX 1: Blocking condition (was !this.onGround, should be this.onGround)
+    this.blocking = (movement.dx === -this.facing && this.onGround) || buttons.block;
+    this.crouching = movement.dy === 1 && this.onGround;
+
+    let speed = this.charData.speed;
+    if (this.crouching) speed *= 0.3;
+
+    if (movement.dx !== 0) {
+      this.vx = movement.dx * speed;
+      if (this.onGround && !this.crouching) {
+        this.animState = movement.dx === this.facing ? 'walk' : 'walk_back';
+      }
+    } else {
+      this.vx *= CONFIG.FRICTION;
+      if (Math.abs(this.vx) < 0.5) this.vx = 0;
+    }
+
+    if (movement.dy === -1 && this.onGround) {
+      this.vy = -this.charData.jumpPower;
+      this.onGround = false;
+      let jumpAnim = movement.dx === this.facing ? 'jump_forward' : (movement.dx === -this.facing ? 'jump_backward' : 'jump_up');
+      if (!this.charData.animMap[jumpAnim]) jumpAnim = 'idle';
+      this.animState = jumpAnim;
+      if (this.audioManager) this.audioManager.playJump();
+    }
+
+    if (!this.attackCooldown) {
+      if (buttons.punch) this.specialDetector.recordButton('Punch');
+      if (buttons.kick) this.specialDetector.recordButton('Kick');
+
+      const special = this.specialDetector.detect();
+      if (special && this.meter >= special.cost) {
+        this.executeSpecial(special, particles);
+      } else if (buttons.punch) {
+        this.executeAttack('punch', 80, particles);
+      } else if (buttons.kick) {
+        this.executeAttack('kick', 100, particles);
+      } else if (buttons.special && this.meter >= 25) {
+        this.executeAttack('special', 120, particles);
+      }
+    }
+
+    if (Math.abs(this.vx) < 0.5 && this.onGround) {
+      this.animState = this.crouching ? 'crouch' : 'idle';
+    }
+
+    this.applyPhysics();
+    this.updateHitboxes();
+    this.updateAnimation();
+
+    if (this.hitboxes.length > 0) {
+      const oh = opponent.getHurtbox();
+      for (const hb of this.hitboxes) {
+        if (hb.active && rectIntersect(hb, oh)) {
+          if (!this.hitConnect) {
+            this.hitConnect = true;
+            const isBlocked = opponent.blocking && (this.facing !== opponent.facing);
+            const dmg = isBlocked ? Math.floor(hb.damage * 0.1) : hb.damage;
+            opponent.takeDamage(dmg, this, hb.type, damageNumbers, particles, hitStop, isBlocked);
+            this.meter = Math.min(this.maxMeter, this.meter + (isBlocked ? 2 : 5));
+            if (!isBlocked) {
+              particles.emitHitSparks(hb.x + hb.w/2, hb.y + hb.h/2, '#ffcc00', 8);
+              this.comboDetector.record(hb.type);
+              const combo = this.comboDetector.detect();
+              if (combo && this.gameRef) this.gameRef.showAnnouncer(combo.name);
+            }
+          }
+        }
+      }
+    }
+
+    this.x = Math.max(50, Math.min(CONFIG.GAME_WIDTH - 50,this.x));
+  }
+
+  // BUG FIX 2: Frame-based attack system (no setTimeout)
+  executeAttack(type, damage, particles) {
+    // Faster cooldowns for snappier gameplay
+    const cooldownMap = { punch: 18, kick: 22, special: 35, super: 50 };
+    this.attackCooldown = cooldownMap[type] || 20;
+    this.animState = type;
+    this.frameIndex = 0;
+    this.frameTimer = 0;
+    this.hitConnect = false;
+    const fw = 70, fh = 100;
+    const hx = this.x + this.facing * fw * 0.7;
+    const hy = this.y - fh * 0.55;
+    this.hitboxes = [{ x: hx - 35, y: hy - 25, w: 70, h: 60, damage, type, active: false, timer: 0 }];
+    // Faster hitbox activation - startup feels like KOF
+    const anim = this.charData.animMap[type];
+    const frameDuration = anim ? anim[2] : 3;
+    const activateFrame = Math.max(1, Math.floor(anim ? anim[1] * 0.25 : 2)) * frameDuration;
+    const activeDuration = Math.max(3, Math.floor(anim ? anim[1] * 0.5 : 4)) * frameDuration;
+    this.attackFrame = 0;
+    this.attackHitboxData = {
+      activateFrame: activateFrame,
+      deactivateFrame: activateFrame + activeDuration
+    };
+    if (this.audioManager) {
+      if (type === 'punch') this.audioManager.playPunch(this.comboCount);
+      else if (type === 'kick') this.audioManager.playKick(this.comboCount);
+      else if (type === 'special') this.audioManager.playSpecial();
+    }
+  }
+
+  executeSpecial(special, particles) {
+    this.specialTimer = special.startup + 20;
+    this.meter -= special.cost;
+    this.attackCooldown = 40;
+    this.animState = special.type === 'super' ? 'super' : 'special';
+    this.frameIndex = 0;
+    this.hitConnect = false;
+    this.attackFrame = 0;
+    this.attackHitboxData = null;
+
+    if (special.type === 'projectile') {
+      const projDelay = Math.floor(special.startup / 2);
+      this.attackHitboxData = { activateFrame: -1, deactivateFrame: -1, isProjectile: true, delay: projDelay, special: special };
+    } else {
+      const hx = this.x + this.facing * 60;
+      this.hitboxes = [{ x: hx - 40, y: this.y - 90, w: 80, h: 80, damage: special.damage, type: 'special', active: false, timer: 0 }];
+      this.attackFrame = 0;
+      this.attackHitboxData = {
+        activateFrame: special.startup,
+        deactivateFrame: special.startup + 10
+      };
+    }
+    particles.emit(this.x, this.y - 50, '#00ccff', 20, 'burst');
+    if (this.audioManager) this.audioManager.playSpecial();
+    if (this.gameRef) this.gameRef.showAnnouncer(special.name);
+  }
+
+  takeDamage(damage, attacker, type, damageNumbers, particles, hitStop, wasBlocked=false) {
+    if (this.invincible) return;
+    const isCounter = this.attackCooldown > 0 && !wasBlocked;
+    let actualDamage = isCounter ? Math.floor(damage * 1.3) : damage;
+    this.health = Math.max(0, this.health - actualDamage);
+    this.meter = Math.min(this.maxMeter, this.meter + 3);
+    damageNumbers.add(this.x, this.y - 100, actualDamage, {
+      isBlocked: wasBlocked, isCounter: isCounter, isSuper: type === 'super' || type === 'special'
+    });
+
+    // Pushback on Block
+    if (wasBlocked) {
+      this.vx = -this.facing * CONFIG.PUSHBACK_FORCE;
+      if (attacker) attacker.vx = attacker.facing * CONFIG.PUSHBACK_FORCE * 0.5;
+      if (this.audioManager) this.audioManager.playBlock();
+      if (hitStop) hitStop.trigger(4); // Short hitstop on block
+    } else {
+      // Faster stun for more combo potential
+      const stunMap = { punch: 8, kick: 10, special: 18, super: 30 };
+      this.stunTimer = stunMap[type] || 10;
+      this.animState = 'hit';
+      this.frameIndex = 0;
+      this.vx = -this.facing * Math.min(damage / 12, 8); // Cap pushback
+      if (type === 'super' || (this.charData.specialMoves && this.charData.specialMoves.find(m => m.name === type && m.knockdown))) {
+        this.knockdownTimer = 45; // Faster recovery
+        this.vy = -7;
+        this.animState = 'knockdown';
+      }
+      if (isCounter && this.audioManager) this.audioManager.playCounter();
+      const hitStopFrames = type === 'super' ? 12 : (type === 'special' ? 9 : isCounter ? 8 : 6);
+      particles.emitHitSparks(this.x, this.y - 50, isCounter ? '#ffffff' : '#ff0000', isCounter ? 20 : 12);
+      if (hitStop) hitStop.trigger(hitStopFrames);
+      if (this.audioManager) this.audioManager.playHit();
+
+      // Combo counter para el atacante — con puntos acumulados
+      if (attacker) {
+        attacker.comboCount++;
+        attacker.comboTimer = 120;
+        // Puntos: daño * multiplicador de combo
+        const multiplier = 1 + Math.min(attacker.comboCount * 0.1, 2.0);
+        attacker.comboPoints = (attacker.comboPoints || 0) + Math.floor(actualDamage * multiplier);
+        if (attacker.gameRef) attacker.gameRef.updateComboDisplay(attacker.playerNum, attacker.comboCount, attacker.comboPoints);
+      }
+    }
+    if (this.health <= 0 && !this.isDead) {
+      this.isDead = true;
+      this.knockdownTimer = 120;
+      this.animState = 'knockdown';
+    }
+  }
+
+  applyPhysics() {
+    this.vy += CONFIG.GRAVITY;
+    if (this.vy > CONFIG.TERMINAL_VELOCITY) this.vy = CONFIG.TERMINAL_VELOCITY;
+    this.x += this.vx;
+    this.y += this.vy;
+    if (this.y >= CONFIG.GROUND_Y) {
+      this.y = CONFIG.GROUND_Y;
+      if (this.vy > 2) {
+        this.vy = -this.vy * 0.15;
+      } else {
+        this.vy = 0;
+      }
+      this.onGround = true;
+      if (this.knockdownTimer > 0 && this.knockdownTimer - 1 <= 0) {
+        this.knockdownTimer = 0;
+        if (!this.isDead) this.animState = 'idle';
+      } else if (this.knockdownTimer > 0) {
+        // stay grounded
+      }
+    } else {
+      this.onGround = false;
+      this.vx *= CONFIG.AIR_FRICTION;
+    }
+    if (this.x < 60) {
+      this.x = 60;
+      this.vx = Math.abs(this.vx) * CONFIG.WALL_BOUNCE;
+    }
+    if (this.x > CONFIG.GAME_WIDTH - 60) {
+      this.x = CONFIG.GAME_WIDTH - 60;
+      this.vx = -Math.abs(this.vx) * CONFIG.WALL_BOUNCE;
+    }
+  }
+
+  updateHitboxes() {
+    for (const hb of this.hitboxes) {
+      if (hb.timer !== undefined) hb.timer++;
+    }
+    if (this.hitboxes.length > 0 && this.attackHitboxData && !this.attackHitboxData.isProjectile) {
+      for (const hb of this.hitboxes) {
+        const scale = this.charData.spriteScale || 1.2;
+        const reach = hb.type === 'kick' ? 80 * scale : (hb.type === 'special' ? 90 * scale : 65 * scale);
+        const height = hb.type === 'kick' ? 50 * scale : (hb.type === 'special' ? 60 * scale : 45 * scale);
+        hb.x = this.x + this.facing * reach - hb.w / 2;
+        hb.y = this.y - height;
+      }
+    }
+    if (this.attackHitboxData && this.attackHitboxData.isProjectile) {
+      // NOTE: attackFrame is already incremented in update() via the top block for non-projectile,
+      // but for projectile mode it's NOT incremented there (attackHitboxData.activateFrame === -1).
+      // So we increment here only for the projectile path.
+      this.attackFrame++;
+      if (this.attackFrame >= this.attackHitboxData.delay && !this.attackHitboxData.spawned) {
+        this.attackHitboxData.spawned = true;
+        const special = this.attackHitboxData.special;
+        const projImg = this.spriteRenderer.assetManager.getFrame(this.charKey, 'projectile', 0);
+        this.projectiles.push(new Projectile(this.x + this.facing * 60, this.y - 60, this.facing, this, special, projImg));
+      }
+    }
+  }
+
+  updateAnimation() {
+    let anim = this.charData.animMap[this.animState];
+    if (!anim) {
+      // Fallback to idle if animation not found
+      anim = this.charData.animMap['idle'];
+      if (!anim) return;
+      this.animState = 'idle';
+    }
+    const [folder, count, duration] = anim;
+    this.frameTimer++;
+    if (this.frameTimer >= duration) {
+      this.frameTimer = 0;
+      this.frameIndex++;
+      if (this.frameIndex >= count) {
+        if (this.animState === 'hit') {
+          // Fast recovery from hit
+          if (this.stunTimer <= 0) {
+            this.frameIndex = 0;
+            this.animState = 'idle';
+          }
+        } else if (this.animState === 'knockdown') {
+          // Stay on last frame until knockdown ends
+          this.frameIndex = count - 1;
+          if (this.knockdownTimer <= 0) {
+            this.frameIndex = 0;
+            this.animState = 'idle';
+          }
+        } else {
+          this.frameIndex = 0;
+          if (this.animState !== 'idle' && this.animState !== 'walk' && this.animState !== 'walk_back' && this.animState !== 'crouch') {
+            this.animState = 'idle';
+          }
+        }
+      }
+    }
+  }
+
+  getHurtbox() {
+    const scale = this.charData.spriteScale || 1.2;
+    const w = 45 * scale;
+    const h = 85 * scale;
+    return { x: this.x - w/2, y: this.y - h, w, h };
+  }
+
+  draw(ctx) {
+    // Shadow that scales with jump height
+    const groundDist = CONFIG.GROUND_Y - this.y;
+    const shadowScale = Math.max(0.3, 1 - groundDist / 300);
+    ctx.fillStyle = `rgba(0,0,0,${0.3 * shadowScale})`;
+    ctx.beginPath();
+    ctx.ellipse(this.x, CONFIG.GROUND_Y + 5, 35 * shadowScale, 8 * shadowScale, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    this.spriteRenderer.draw(ctx, this.animState, this.frameIndex, this.x, this.y, this.facing);
+    this.projectiles.forEach(p => p.draw(ctx));
+  }
+}
+
+function rectIntersect(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+function rectOverlap(a, b) {
+  const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  return { x: ox, y: oy };
+}
+
+// ========================
+// CPU CONTROLLER (uses difficulty from settings)
+// ========================
+class CPUController {
+  constructor(difficulty) {
+    this.difficulty = difficulty || 'medium';
+    this.timer = 0;
+    this.targetDist = 100;
+    this.reactionTime = this.getReactionTime();
+  }
+  getReactionTime() {
+    switch(this.difficulty) {
+      case 'easy': return { min: 12, max: 35 };
+      case 'hard': return { min: 2, max: 8 };
+      default: return { min: 5, max: 18 };
+    }
+  }
+  update(cpu, player) {
+    this.timer++;
+    const dist = Math.abs(player.x - cpu.x);
+    const dir = player.x > cpu.x ? 1 : -1;
+    const input = { dx: 0, dy: 0, rawX: 0, rawY: 0 };
+    const buttons = { punch: false, kick: false, special: false, block: false };
+    if (cpu.stunTimer || cpu.knockdownTimer || cpu.specialTimer) return { movement: input, buttons };
+
+    const reaction = this.reactionTime;
+    const reactRoll = Math.floor(Math.random() * (reaction.max - reaction.min)) + reaction.min;
+
+    if (dist > this.targetDist + 30) input.dx = dir;
+    else if (dist < this.targetDist - 30) input.dx = -dir;
+    if (!player.onGround && cpu.onGround && Math.random() < 0.03) input.dy = -1;
+    if (dist < 90 && this.timer > reactRoll) {
+      this.timer = 0;
+      const r = Math.random();
+      const attackChance = this.difficulty === 'easy' ? 0.05 : (this.difficulty === 'hard' ? 0.12 : 0.08);
+      if (Math.random() < attackChance) {
+        if (r < 0.4) buttons.punch = true;
+        else if (r < 0.7) buttons.kick = true;
+        else if (cpu.meter >= 25) buttons.special = true;
+      }
+    }
+    const blockChance = this.difficulty === 'easy' ? 0.15 : (this.difficulty === 'hard' ? 0.6 : 0.35);
+    if (player.attackCooldown > 10 && dist < 120 && Math.random() < blockChance) buttons.block = true;
+    return { movement: input, buttons };
+  }
+}
+
+
+// ========================
+// MAIN GAME CLASS (with all new features)
+// ========================
+class Game {
+  constructor() {
+    this.canvas = document.getElementById('gameCanvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.resize();
+    this.assetManager = new FrameAssetManager();
+    this.audioManager = new ProceduralAudio();
+    this.bgManager = new BackgroundManager();
+    this.hitStop = new HitStop();
+    this.input = new InputSystem();
+    this.particles = new ParticleSystem();
+    this.damageNumbers = new DamageNumberManager();
+    this.cpu = new CPUController(settingsManager.get('difficulty'));
+    this.state = 'intro';
+    this.selectedChars = { p1: 'dual', p2: 'garravas' };
+    this.round = 1;
+    this.maxRounds = settingsManager.get('roundCount');
+    this.scores = { p1: 0, p2: 0 };
+    this.roundTimer = CONFIG.ROUND_TIME;
+    this.roundTimerActive = false;
+    this.p1 = null;
+    this.p2 = null;
+    this.camera = { x: 0, y: 0 };
+    // BUG FIX 5: Delta time
+    this.lastTime = 0;
+    this.dt = 1;
+    // Screen shake from heavy hits
+    this.screenShake = { x: 0, y: 0, intensity: 0, decay: 0.9 };
+    this.setupUI();
+    this.setupNewScreens();
+    this.loop = this.loop.bind(this);
+    requestAnimationFrame(this.loop);
+    window.addEventListener('resize', () => this.resize());
+    window.addEventListener('keydown', e => {
+      if (e.code === 'Escape' || e.code === 'KeyP') this.togglePause();
+    });
+  }
+
+  resize() {
+    this.canvas.width = window.innerWidth;
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isPortrait = window.innerHeight > window.innerWidth;
+
+    // Reserve bottom space for touch controls on mobile
+    const ctrlEl = document.getElementById('touch-controls');
+    let ctrlH = 0;
+    if (isMobile) {
+      document.body.classList.add('mobile-mode');
+      ctrlEl && ctrlEl.classList.add('active');
+      // Determine height from CSS breakpoint
+      if (window.innerWidth <= 480 || (window.innerHeight <= 500 && !isPortrait)) ctrlH = 140;
+      else if (window.innerWidth <= 768) ctrlH = 190;
+      else ctrlH = 220;
+    } else {
+      document.body.classList.remove('mobile-mode');
+      ctrlEl && ctrlEl.classList.remove('active');
+    }
+
+    this.canvas.height = window.innerHeight;
+    const availH = window.innerHeight - ctrlH;
+
+    this.scaleX = this.canvas.width / CONFIG.GAME_WIDTH;
+    this.scaleY = availH / CONFIG.GAME_HEIGHT;
+    this.scale = Math.min(this.scaleX, this.scaleY);
+    this.offsetX = (this.canvas.width - CONFIG.GAME_WIDTH * this.scale) / 2;
+    this.offsetY = (availH - CONFIG.GAME_HEIGHT * this.scale) / 2;
+    // Small top margin
+    this.offsetY = Math.max(8, this.offsetY);
+  }
+
+  setupUI() {
+    const grid = document.getElementById('charGrid');
+    Object.keys(CONFIG.CHARACTERS).forEach(key => {
+      const char = CONFIG.CHARACTERS[key];
+      const card = document.createElement('div');
+      card.className = 'char-card';
+      const portrait = CONFIG.PORTRAITS[key] || '';
+      card.innerHTML = `<div class="char-preview" style="background:${char.color}; overflow:hidden;"><img src="${portrait}" style="width:100%;height:100%;object-fit:cover;" alt="${char.name}" onerror="this.style.display='none';this.parentElement.style.background='${char.color}'"></div><div class="char-name">${char.name}</div>`;
+      card.onclick = () => {
+        document.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        this.selectedChars.p1 = key;
+        const others = Object.keys(CONFIG.CHARACTERS).filter(k => k !== key);
+        this.selectedChars.p2 = others[Math.floor(Math.random() * others.length)];
+      };
+      grid.appendChild(card);
+    });
+
+    document.getElementById('btnJugar').onclick = () => this.toCharSelect();
+    document.getElementById('btnTraining').onclick = () => this.toTraining();
+    document.getElementById('btnControles').onclick = () => this.showControls();
+    document.getElementById('btnSettings').onclick = () => this.showSettings();
+    document.getElementById('btnPelear').onclick = () => this.startMatch();
+    document.getElementById('btnAtras').onclick = () => this.toMenu();
+    document.getElementById('btnResume').onclick = () => this.resume();
+    document.getElementById('btnRestart').onclick = () => this.restartRound();
+    document.getElementById('btnMenu').onclick = () => this.toMenu();
+
+    const loadingScreen = document.getElementById('loading-screen');
+    loadingScreen.addEventListener('click', () => { this.assetManager.forceReady = true; });
+    loadingScreen.addEventListener('touchstart', () => { this.assetManager.forceReady = true; });
+  }
+
+  setupNewScreens() {
+    // Controls screen
+    const specialMovesContainer = document.getElementById('controls-special-moves');
+    Object.keys(CONFIG.CHARACTERS).forEach(key => {
+      const char = CONFIG.CHARACTERS[key];
+      if (!char.specialMoves || char.specialMoves.length === 0) return;
+      const section = document.createElement('div');
+      section.className = 'controls-section';
+      section.innerHTML = `<h3 style="color:${char.color}">${char.name}</h3>`;
+      char.specialMoves.forEach(move => {
+        section.innerHTML += `
+          <div class="special-move-item">
+            <div class="move-name">${move.name}</div>
+            <div class="move-input">${move.input}</div>
+            <div class="move-dmg">${move.damage} DMG | Cost: ${move.cost}</div>
+          </div>`;
+      });
+      specialMovesContainer.appendChild(section);
+    });
+    document.getElementById('btnControlsBack').onclick = () => this.hideControls();
+
+    // Settings screen
+    document.getElementById('setting-difficulty').value = settingsManager.get('difficulty');
+    document.getElementById('setting-time').value = String(settingsManager.get('roundTime'));
+    document.getElementById('setting-rounds').value = String(settingsManager.get('roundCount'));
+    document.getElementById('setting-volume').value = settingsManager.get('volume');
+    document.getElementById('volume-display').textContent = settingsManager.get('volume') + '%';
+
+    document.getElementById('setting-volume').addEventListener('input', e => {
+      document.getElementById('volume-display').textContent = e.target.value + '%';
+    });
+    document.getElementById('btnSaveSettings').onclick = () => this.saveSettings();
+    document.getElementById('btnSettingsBack').onclick = () => this.hideSettings();
+
+    // Victory screen
+    document.getElementById('btnRematch').onclick = () => this.rematch();
+    document.getElementById('btnVictoryMenu').onclick = () => this.toMenu();
+
+    // Intro screen
+    const intro = document.getElementById('intro-screen');
+    const skipIntro = () => {
+      if (this.state === 'intro') {
+        this.state = 'menu';
+        this.setScreen('menu-screen');
+        localStorage.setItem('kof_intro_seen', 'true');
+      }
+    };
+    intro.addEventListener('click', skipIntro);
+    window.addEventListener('keydown', e => {
+      if (this.state === 'intro') skipIntro();
+    });
+
+    // Check if intro should play
+    const introSeen = localStorage.getItem('kof_intro_seen');
+    if (introSeen) {
+      this.state = 'menu';
+      this.setScreen('menu-screen');
+    } else {
+      this.setScreen('intro-screen');
+    }
+  }
+
+  // ---- NEW SCREEN MANAGEMENT ----
+  showControls() {
+    this.setScreen('controls-screen');
+  }
+  hideControls() {
+    this.setScreen('menu-screen');
+  }
+  showSettings() {
+    this.setScreen('settings-screen');
+  }
+  hideSettings() {
+    this.setScreen('menu-screen');
+  }
+  saveSettings() {
+    settingsManager.set('difficulty', document.getElementById('setting-difficulty').value);
+    settingsManager.set('roundTime', parseInt(document.getElementById('setting-time').value));
+    settingsManager.set('roundCount', parseInt(document.getElementById('setting-rounds').value));
+    settingsManager.set('volume', parseInt(document.getElementById('setting-volume').value));
+    settingsManager.save();
+    settingsManager.applyToConfig();
+    // Apply volume to audio
+    this.audioManager.setVolume(settingsManager.get('volume') / 100);
+    // Update CPU difficulty
+    this.cpu = new CPUController(settingsManager.get('difficulty'));
+    this.maxRounds = settingsManager.get('roundCount');
+    const msg = document.getElementById('settings-save-msg');
+    msg.classList.add('show');
+    setTimeout(() => msg.classList.remove('show'), 2000);
+  }
+  showVictory(winner) {
+    const screen = document.getElementById('victory-screen');
+    const title = document.getElementById('victory-title');
+    const score = document.getElgetElementById('victory-score');
+    if (winner === 'p1')
+      title.textContent = 'PLAYER 1 WINS';
+      title.className = 'p1-wins';
+    } else {
+      title.textContent = 'PLAYER 2 WINS';
+      title.className = 'p2-wins';
+    }
+    score.textContent = `${this.scores.p1} - ${this.scores.p2}`;
+    this.setScreen('victory-screen');
+  }
+
+  // ---- COMBO COUNTER ----
+  // ─── DMC-style combo display ───────────────────────────────────────────────
+  _getDMCRank(hits) {
+    if (hits >= 20) return { letter:'SSS', label:'SMOKIN SICK STYLE!!!', cls:'rank-SSS' };
+    if (hits >= 14) return { letter:'SS',  label:'SMOKIN SEXY STYLE!!',  cls:'rank-SS'  };
+    if (hits >= 10) return { letter:'S',   label:'STYLISH!!',            cls:'rank-S'   };
+    if (hits >= 7)  return { letter:'A',   label:'AWESOME!',             cls:'rank-A'   };
+    if (hits >= 5)  return { letter:'B',   label:'BADASS',               cls:'rank-B'   };
+    if (hits >= 3)  return { letter:'C',   label:'COOL',                 cls:'rank-C'   };
+    return           { letter:'D',   label:'DULL',                 cls:'rank-D'   };
+  }
+
+  updateComboDisplay(playerNum, count, pts) {
+    const p = playerNum === 1 ? 'p1' : 'p2';
+    const counter   = document.getElementById(`combo-counter-${p}`);
+    const elCount   = document.getElementById(`combo-${p}-count`);
+    const elRank    = document.getElementById(`combo-${p}-rank`);
+    const elStyle   = document.getElementById(`combo-${p}-style`);
+    const elPts     = document.getElementById(`combo-${p}-pts`);
+    if (!counter) return;
+
+    if (count < 2) {
+      counter.classList.remove('active');
+      return;
+    }
+    counter.classList.add('active');
+
+    const rank = this._getDMCRank(count);
+
+    // Count number — pop animation
+    if (elCount) {
+      elCount.textContent = count;
+      elCount.classList.remove('pop');
+      void elCount.offsetWidth; // reflow
+      elCount.classList.add('pop');
+    }
+
+    // Rank letter — only re-animate on rank change
+    if (elRank) {
+      const prevRank = elRank.dataset.rank;
+      if (prevRank !== rank.letter) {
+        elRank.className = `combo-rank-letter ${rank.cls}`;
+        elRank.textContent = rank.letter;
+        elRank.dataset.rank = rank.letter;
+        // Re-trigger animation
+        elRank.style.animation = 'none';
+        void elRank.offsetWidth;
+        elRank.style.animation = '';
+      }
+    }
+    if (elStyle) { elStyle.textContent = rank.label; elStyle.className = `combo-style-label ${rank.cls}`; }
+    if (elPts && pts !== undefined) elPts.textContent = `${pts} PTS`;
+  }
+
+  toCharSelect() { this.setScreen('char-select-screen'); }
+  toMenu() {
+    this.state = 'menu';
+    this.setScreen('menu-screen');
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('touch-controls').classList.remove('active');
+    this.audioManager.stopBGM();
+  }
+  toTraining() {
+    this.selectedChars.p1 = 'dual';
+    this.selectedChars.p2 = 'garravas';
+    this.startMatch();
+  }
+  setScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    if (id) {
+      const el = document.getElementById(id);
+      if (el) { el.classList.add('active'); el.classList.add('screen-enter'); }
+    }
+  }
+
+  async startMatch() {
+    this.setScreen(null);
+    document.getElementById('hud').style.display = 'flex';
+    if ('ontouchstart' in window) document.getElementById('touch-controls').classList.add('active');
+
+    const loading = document.getElementById('loading-screen');
+    const loadingFill = document.getElementById('loading-fill');
+    const loadingText = document.getElementById('loading-text');
+    loading.classList.add('active');
+
+    this.assetManager.onProgress = (loaded, total) => {
+      const pct = total > 0 ? (loaded / total) * 100 : 100;
+      loadingFill.style.width = pct + '%';
+      loadingText.textContent = `${loaded}/${total}`;
+    };
+
+    // Apply settings
+    settingsManager.applyToConfig();
+    this.maxRounds = settingsManager.get('roundCount');
+    this.audioManager.setVolume(settingsManager.get('volume') / 100);
+
+    this.p1 = new Character(this.selectedChars.p1, 300, CONFIG.GROUND_Y, 1, this.assetManager, this, this.audioManager);
+    this.p2 = new Character(this.selectedChars.p2, 980, CONFIG.GROUND_Y, 2, this.assetManager, this, this.audioManager);
+
+    const timeoutPromise = new Promise(r => setTimeout(r, 6000));
+    const loadPromise = Promise.all([this.p1.init(), this.p2.init(), this.bgManager.loadAll()]);
+    await Promise.race([loadPromise, timeoutPromise]);
+
+    loading.classList.remove('active');
+    this.state = 'fighting';
+    this.roundTimer = CONFIG.ROUND_TIME;
+    this.roundTimerActive = false;
+    this.audioManager.startBGM();
+    this.startRound();
+  }
+
+  startRound() {
+    // BUG FIX 4: Reset combo/special detectors
+    if (this.p1) { this.p1.comboDetector.reset(); this.p1.specialDetector.reset(); this.p1.comboCount = 0; this.p1.comboTimer = 0; }
+    if (this.p2) { this.p2.comboDetector.reset(); this.p2.specialDetector.reset(); this.p2.comboCount = 0; this.p2.comboTimer = 0; }
+    this.updateComboDisplay(1, 0);
+    this.updateComboDisplay(2, 0);
+
+    this.p1.x = 300; this.p1.y = CONFIG.GROUND_Y;
+    this.p2.x = 980; this.p2.y = CONFIG.GROUND_Y;
+    this.p1.health = this.p1.maxHealth;
+    this.p2.health = this.p2.maxHealth;
+    this.p1.isDead = false; this.p2.isDead = false;
+    this.p1.animState = 'idle'; this.p2.animState = 'idle';
+    this.p1.projectiles = []; this.p2.projectiles = [];
+    this.p1.vx = 0; this.p1.vy = 0; this.p2.vx = 0; this.p2.vy = 0;
+    this.p1.hitboxes = []; this.p2.hitboxes = [];
+    this.p1.attackHitboxData = null; this.p2.attackHitboxData = null;
+    // BUG FIX 4b: Reset timers so round doesn't start mid-stun
+    this.p1.stunTimer = 0; this.p2.stunTimer = 0;
+    this.p1.knockdownTimer = 0; this.p2.knockdownTimer = 0;
+    this.p1.attackCooldown = 0; this.p2.attackCooldown = 0;
+    this.p1.specialTimer = 0; this.p2.specialTimer = 0;
+    this.p1.comboCount = 0; this.p1.comboPoints = 0;
+    this.p2.comboCount = 0; this.p2.comboPoints = 0;
+    this.p1.frameIndex = 0; this.p1.frameTimer = 0;
+    this.p2.frameIndex = 0; this.p2.frameTimer = 0;
+    this.showRoundText(`ROUND ${this.round}`);
+    this.audioManager.playRound();
+    setTimeout(() => {
+      this.showRoundText('FIGHT!');
+      this.roundTimerActive = true;
+      setTimeout(() => document.getElementById('round-text').classList.remove('show'), 1000);
+    }, 2000);
+  }
+
+  showRoundText(text) {
+    const el = document.getElementById('round-text');
+    el.textContent = text;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 1500);
+  }
+
+  showAnnouncer(text) {
+    const el = document.getElementById('announcer');
+    el.textContent = text;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 1500);
+  }
+
+  flashHit(color='#ffffff') {
+    // Breve flash de color sobre el canvas — simula impacto de DMC
+    const ctx = this.ctx;
+    const orig = ctx.globalAlpha;
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    ctx.restore();
+    // Se dibuja en el mismo frame de draw, así que el efecto es instantáneo
+    // Para que persista 1 frame usamos un flag
+    this._hitFlash = { color, frames: 2 };
+  }
+
+  togglePause() {
+    if (this.state === 'fighting') {
+      this.state = 'paused';
+      document.getElementById('pause-menu').classList.add('active');
+      this.audioManager.stopBGM();
+    } else if (this.state === 'paused') {
+      this.resume();
+      this.audioManager.startBGM();
+    }
+  }
+  resume() {
+    this.state = 'fighting';
+    document.getElementById('pause-menu').classList.remove('active');
+  }
+  restartRound() {
+    this.resume();
+    this.startRound();
+  }
+  rematch() {
+    this.scores = { p1: 0, p2: 0 };
+    this.round = 1;
+    this.startMatch();
+  }
+  toggleControls() {
+    this.showControls();
+  }
+
+  // BUG FIX 5: Delta time calculation at start of game loop
+  loop(timestamp) {
+    if (!this.lastTime) this.lastTime = timestamp;
+    this.dt = Math.min((timestamp - this.lastTime) / (1000/60), 3); // Cap at 3x
+    this.lastTime = timestamp;
+    this.update();
+    this.draw();
+    requestAnimationFrame(this.loop);
+  }
+
+  update() {
+    if (this.state !== 'fighting') return;
+    if (this.roundTimerActive && this.roundTimer > 0) {
+      this.roundTimer -= 1/60 * this.dt;
+      if (this.roundTimer <= 0) { this.roundTimer = 0; this.endRound('time'); }
+    }
+
+    this.hitStop.update();
+    if (this.hitStop.isActive()) {
+      // Apply screen shake even during hitstop
+      const shake = this.hitStop.getShake();
+      this.screenShake.x = shake.x;
+      this.screenShake.y = shake.y;
+    } else {
+      this.screenShake.x *= this.screenShake.decay;
+      this.screenShake.y *= this.screenShake.decay;
+    }
+
+    let p2Input = this.input;
+    if (this.p2.playerNum === 2) {
+      const cpuInput = this.cpu.update(this.p2, this.p1);
+      p2Input = { getMovement: () => cpuInput.movement, getButtons: () => cpuInput.buttons };
+    }
+
+    // Only update game logic when not in hitstop
+    if (!this.hitStop.isActive()) {
+      this.p1.update(this.input, this.p2, this.particles, this.damageNumbers, this.hitStop);
+      this.p2.update(p2Input, this.p1, this.particles, this.damageNumbers, this.hitStop);
+      this.particles.update();
+      this.damageNumbers.update();
+      this.bgManager.update(this.camera.x);
+
+      if (this.p1.isDead || this.p2.isDead) {
+        if (!this.p1.isDead && this.p2.isDead) this.endRound('p1');
+        else if (this.p1.isDead && !this.p2.isDead) this.endRound('p2');
+        else if (this.p1.isDead && this.p2.isDead) this.endRound('draw');
+      }
+    }
+
+    const midX = (this.p1.x + this.p2.x) / 2;
+    this.camera.x += (midX - CONFIG.GAME_WIDTH/2 - this.camera.x) * 0.1;
+    this.camera.x = Math.max(-200, Math.min(200, this.camera.x));
+    this.updateHUD();
+  }
+
+  endRound(winner) {
+    this.state = 'round_end';
+    this.roundTimerActive = false;
+    if (winner === 'p1') {
+      this.scores.p1++;
+      this.showAnnouncer('P1 GANA');
+      this.p1.animState = 'victory';
+      this.audioManager.playWin();
+    } else if (winner === 'p2') {
+      this.scores.p2++;
+      this.showAnnouncer('P2 GANA');
+      this.p2.animState = 'victory';
+      this.audioManager.playWin();
+    } else {
+      this.showAnnouncer('EMPATE');
+    }
+
+    const roundsToWin = Math.ceil(this.maxRounds / 2);
+    setTimeout(() => {
+      if (this.scores.p1 >= roundsToWin || this.scores.p2 >= roundsToWin) {
+        this.showVictory(this.scores.p1 >= roundsToWin ? 'p1' : 'p2');
+      } else {
+        this.round++;
+        this.state = 'fighting';
+        this.startRound();
+      }
+    }, 2500);
+  }
+
+  updateHUD() {
+    const updateBar = (id, val, max) => {
+      const pct = (val / max) * 100;
+      const bar = document.getElementById(id);
+      if (bar) bar.style.width = pct + '%';
+      if (bar) bar.className = 'health-bar' + (pct < 25 ? ' red' : pct < 50 ? ' yellow' : '');
+    };
+    updateBar('p1-health', this.p1.health, this.p1.maxHealth);
+    updateBar('p2-health', this.p2.health, this.p2.maxHealth);
+    const p1m = document.getElementById('p1-meter');
+    const p2m = document.getElementById('p2-meter');
+    if (p1m) p1m.style.width = (this.p1.meter / this.p1.maxMeter * 100) + '%';
+    if (p2m) p2m.style.width = (this.p2.meter / this.p2.maxMeter * 100) + '%';
+    const timerEl = document.getElementById('timer');
+    if (timerEl) {
+      timerEl.textContent = Math.ceil(this.roundTimer);
+      if (this.roundTimer <= 10) timerEl.classList.add('danger');
+      else timerEl.classList.remove('danger');
+    }
+  }
+
+  draw() {
+    const ctx = this.ctx;
+    ctx.fillStyle = '#1a0a2e';
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Screen shake applied BEFORE scale so it's in screen pixels, not game units
+    const shakeX = this.screenShake.x;
+    const shakeY = this.screenShake.y;
+
+    ctx.save();
+    ctx.translate(this.offsetX + shakeX, this.offsetY + shakeY);
+    ctx.scale(this.scale, this.scale);
+
+    // Background and floor (in game units, no camera offset)
+    this.bgManager.draw(ctx);
+    ctx.fillStyle = '#2a1a3e';
+    ctx.fillRect(-200, CONFIG.GROUND_Y, CONFIG.GAME_WIDTH + 400, 200);
+    ctx.fillStyle = '#3a2a4e';
+    ctx.fillRect(-200, CONFIG.GROUND_Y, CONFIG.GAME_WIDTH + 400, 10);
+    ctx.strokeStyle = 'rgba(255,215,0,0.3)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(100, CONFIG.GROUND_Y); ctx.lineTo(100, CONFIG.GROUND_Y - 200);
+    ctx.moveTo(1180, CONFIG.GROUND_Y); ctx.lineTo(1180, CONFIG.GROUND_Y - 200);
+    ctx.stroke();
+
+    // Camera offset only applies to characters and particles
+    ctx.save();
+    ctx.translate(-this.camera.x, 0);
+    if (this.p1) this.p1.draw(ctx);
+    if (this.p2) this.p2.draw(ctx);
+    this.particles.draw(ctx);
+    this.damageNumbers.draw(ctx);
+    ctx.restore();
+
+    ctx.restore();
+
+    // Hit flash overlay en screen-space (no afectado por scale/shake)
+    if (this._hitFlash && this._hitFlash.frames > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.15 * (this._hitFlash.frames / 2);
+      ctx.fillStyle = this._hitFlash.color;
+      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      ctx.restore();
+      this._hitFlash.frames--;
+    }
+  }
+}
+
+const game = new Game();
+</script>
+</body>
+</html>
