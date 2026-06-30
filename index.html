@@ -492,7 +492,7 @@ body { background:var(--bg-dark); overflow:hidden; font-family:var(--font-body);
 
 <script>
 // ========================
-// CONFIGURACIoN
+// CONFIGURACIÓN
 // ========================
 const CONFIG = {
   GAME_WIDTH: 1280, GAME_HEIGHT: 720, GROUND_Y: 580,
@@ -2957,7 +2957,7 @@ class Game {
   showVictory(winner) {
     const screen = document.getElementById('victory-screen');
     const title = document.getElementById('victory-title');
-    const score = document.getElgetElementById('victory-score');
+    const score = document.getElementById('victory-score');
     if (winner === 'p1')
       title.textContent = 'PLAYER 1 WINS';
       title.className = 'p1-wins';
