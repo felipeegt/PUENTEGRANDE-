@@ -26,10 +26,10 @@
   --font-title: 'Orbitron', sans-serif;
   --font-body: 'Roboto', sans-serif;
 }
-
+{
 * { margin:0; padding:0; box-sizing:border-box; touch-action:none; user-select:none; -webkit-user-select:none; }
 body { background:var(--bg-dark); overflow:hidden; font-family:var(--font-body); color:#fff; }
-#game-container { position:relative; width:100vw; height:100vh; }
+#game-container { position:relative; width:100vw; height:10 0vh; }
 #gameCanvas { display:block; width:100%; height:100%; }
 
 #ui-layer { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
@@ -103,16 +103,44 @@ body { background:var(--bg-dark); overflow:hidden; font-family:var(--font-body);
 .player-label { font-size:0.8rem; color:#aaa; margin-top:2px; font-family:var(--font-title); letter-spacing:1px; }
 
 /* ========================
-   COMBO COUNTER
+   COMBO COUNTER — ESTILO DMC
    ======================== */
-.combo-counter { position:absolute; top:80px; pointer-events:none; z-index:20; display:none; }
-.combo-counter.active { display:block; }
-.combo-p1 { left:20px; text-align:left; }
+.combo-counter { position:absolute; top:80px; pointer-events:none; z-index:20; opacity:0; transition:opacity 0.2s; }
+.combo-counter.active { opacity:1; }
+.combo-p1 { left:20px; }
 .combo-p2 { right:20px; text-align:right; }
-.combo-count { font-family:var(--font-title); font-size:2.5rem; font-weight:900; color:var(--danger); text-shadow:0 0 15px rgba(255,51,51,0.6); animation:comboPop 0.2s ease-out; }
-.combo-text { font-family:var(--font-title); font-size:0.8rem; color:#ff8888; letter-spacing:2px; text-transform:uppercase; }
-.combo-hits { font-family:var(--font-title); font-size:1rem; color:var(--secondary); }
-@keyframes comboPop { 0%{transform:scale(2);} 100%{transform:scale(1);} }
+
+.combo-inner { display:flex; flex-direction:column; gap:2px; }
+.combo-rank-letter {
+  font-family:var(--font-title);
+  font-size:5rem;
+  font-weight:900;
+  line-height:1;
+  text-shadow: 0 0 30px currentColor, 0 0 60px currentColor, 2px 2px 0 rgba(0,0,0,0.8);
+  animation: rankPop 0.15s cubic-bezier(0.3,1.8,0.5,1) forwards;
+  letter-spacing:-2px;
+}
+.combo-p2 .combo-rank-letter { margin-left: auto; }
+.combo-hits-row { display:flex; align-items:baseline; gap:6px; }
+.combo-p2 .combo-hits-row { flex-direction:row-reverse; }
+.combo-count { font-family:var(--font-title); font-size:2.8rem; font-weight:900; color:#fff; text-shadow:0 0 10px rgba(255,255,255,0.5); line-height:1; }
+.combo-hits-label { font-family:var(--font-title); font-size:0.75rem; color:rgba(255,255,255,0.7); letter-spacing:3px; text-transform:uppercase; }
+.combo-style-label { font-family:var(--font-title); font-size:0.7rem; letter-spacing:4px; text-transform:uppercase; opacity:0.85; margin-top:2px; }
+.combo-points { font-family:var(--font-title); font-size:0.9rem; color:#ffd700; text-shadow:0 0 8px rgba(255,215,0,0.6); }
+
+/* Rank colors */
+.rank-D { color:#888888; }
+.rank-C { color:#4488ff; }
+.rank-B { color:#44ff88; }
+.rank-A { color:#ffcc00; }
+.rank-S { color:#ff6b00; text-shadow:0 0 30px #ff6b00, 0 0 60px #ff3300 !important; }
+.rank-SS { color:#ff0088; font-size:4.2rem; text-shadow:0 0 30px #ff0088, 0 0 60px #ff00ff !important; }
+.rank-SSS { color:#ff0000; font-size:3.8rem; letter-spacing:-4px; text-shadow:0 0 40px #ff0000, 0 0 80px #ff6600, 0 0 120px #ffff00 !important; animation:sssFlicker 0.3s infinite alternate !important; }
+
+@keyframes rankPop { 0%{transform:scale(2) translateY(-10px);opacity:0;} 100%{transform:scale(1) translateY(0);opacity:1;} }
+@keyframes sssFlicker { 0%{filter:brightness(1.5) hue-rotate(0deg);} 100%{filter:brightness(2) hue-rotate(30deg);} }
+@keyframes hitFlash { 0%{transform:scale(1.4);} 100%{transform:scale(1);} }
+.combo-count.pop { animation:hitFlash 0.1s ease-out forwards; }
 
 /* ========================
    TOUCH CONTROLS (ULTRA RESPONSIVE)
@@ -270,27 +298,7 @@ body { background:var(--bg-dark); overflow:hidden; font-family:var(--font-body);
 }
 
 * { -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }</style>
-</head>
-<body>
-<div id="game-container">
-  <canvas id="gameCanvas"></canvas>
-  <div id="ui-layer">
-    <!-- ========================
-         INTRO SCREEN
-         ======================== -->
-    <div id="intro-screen" class="screen">
-      <div id="intro-logo">KOF STYLE<br>FIGHTER</div>
-      <div id="intro-subtitle">V2 ENHANCED</div>
-      <div id="intro-silhouettes">
-        <div class="intro-char"></div>
-        <div class="intro-char"></div>
-        <div class="intro-char"></div>
-        <div class="intro-char"></div>
-        <div class="intro-char"></div>
-        <div class="intro-char"></div>
-      </div>
-      <div id="intro-prompt">CLICK OR PRESS ANY KEY</div>
-    </div>
+</head>  </div>
 
     <!-- ========================
          MENU SCREEN
@@ -335,15 +343,29 @@ body { background:var(--bg-dark); overflow:hidden; font-family:var(--font-body);
     </div>
 
     <!-- ========================
-         COMBO COUNTER
+         COMBO COUNTER — ESTILO DMC
          ======================== -->
     <div id="combo-counter-p1" class="combo-p1 combo-counter">
-      <div class="combo-count" id="combo-p1-count">0</div>
-      <div class="combo-text">HITS</div>
+      <div class="combo-inner">
+        <div class="combo-rank-letter rank-D" id="combo-p1-rank">D</div>
+        <div class="combo-hits-row">
+          <div class="combo-count" id="combo-p1-count">0</div>
+          <div class="combo-hits-label">HITS</div>
+        </div>
+        <div class="combo-style-label rank-D" id="combo-p1-style">DULL</div>
+        <div class="combo-points" id="combo-p1-pts">0 PTS</div>
+      </div>
     </div>
     <div id="combo-counter-p2" class="combo-p2 combo-counter">
-      <div class="combo-count" id="combo-p2-count">0</div>
-      <div class="combo-text">HITS</div>
+      <div class="combo-inner">
+        <div class="combo-rank-letter rank-D" id="combo-p2-rank">D</div>
+        <div class="combo-hits-row">
+          <div class="combo-count" id="combo-p2-count">0</div>
+          <div class="combo-hits-label">HITS</div>
+        </div>
+        <div class="combo-style-label rank-D" id="combo-p2-style">DULL</div>
+        <div class="combo-points" id="combo-p2-pts">0 PTS</div>
+      </div>
     </div>
 
     <!-- ========================
@@ -585,7 +607,7 @@ const CONFIG = {
         mode: 'grid',
         cellW: 172, cellH: 192, cols: 8, rows: 4
       },
-      animMap: {
+      animMap: {animMap: {
         idle:         ['idle',      4, 5],
         walk:         ['walk',      4, 4],
         walk_back:    ['walk_back', 4, 4],
@@ -909,8 +931,7 @@ class SpriteSheet {
       };
       img.onerror = () => resolve(false);
       img.src = src;
-      setTimeout(() => resolve(false), 10000);
-    });
+      setTimeout(() => resolve(false), 10000);  });
   }
   buildFrames() {
     const cfg = this.config;
@@ -1001,6 +1022,7 @@ class ProceduralAudio {
     this.bgmOscillators = [];
     this.bgmGain = null;
     this.bgmPlaying = false;
+    this.hitCount = 0; // escalado de pitch por combo
   }
   ensureCtx() {
     if (!this.ctx) {
@@ -1011,229 +1033,209 @@ class ProceduralAudio {
   setVolume(v) { this.volume = Math.max(0, Math.min(1, v)); }
   now() { this.ensureCtx(); return this.ctx ? this.ctx.currentTime : 0; }
 
-  // Punch: short noise burst with high freq
-  playPunch() {
-    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
-    const t = this.now();
-    const bufferSize = this.ctx.sampleRate * 0.08;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
-    const src = this.ctx.createBufferSource();
-    src.buffer = buffer;
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'bandpass'; filter.frequency.value = 2000; filter.Q.value = 0.8;
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(this.volume * 0.5, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
-    src.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
-    src.start(t); src.stop(t + 0.1);
+  // Ruido filtrado con envolvente — base para todos los golpes
+  _noise(duration, freq, q, filterType, gainPeak, t) {
+    const sr = this.ctx.sampleRate;
+    const buf = this.ctx.createBuffer(1, Math.floor(sr * duration), sr);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1);
+    const src = this.ctx.createBufferSource(); src.buffer = buf;
+    const flt = this.ctx.createBiquadFilter();
+    flt.type = filterType; flt.frequency.value = freq; flt.Q.value = q;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(gainPeak, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + duration * 0.9);
+    src.connect(flt); flt.connect(g); g.connect(this.ctx.destination);
+    src.start(t); src.stop(t + duration + 0.01);
+    return src;
   }
-  // Kick: deeper noise burst
-  playKick() {
-    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
-    const t = this.now();
-    const bufferSize = this.ctx.sampleRate * 0.12;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
-    const src = this.ctx.createBufferSource();
-    src.buffer = buffer;
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'lowpass'; filter.frequency.value = 800; filter.Q.value = 0.5;
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(this.volume * 0.6, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-    src.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
-    src.start(t); src.stop(t + 0.15);
-    // Add a low thump
+  _tone(type, freq, freqEnd, duration, gainPeak, t, delay=0) {
     const osc = this.ctx.createOscillator();
-    osc.type = 'sine'; osc.frequency.setValueAtTime(120, t);
-    osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
-    const oscGain = this.ctx.createGain();
-    oscGain.gain.setValueAtTime(this.volume * 0.5, t);
-    oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-    osc.connect(oscGain); oscGain.connect(this.ctx.destination);
-    osc.start(t); osc.stop(t + 0.15);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t + delay);
+    if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, t + delay + duration * 0.8);
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.001, t + delay);
+    g.gain.linearRampToValueAtTime(gainPeak, t + delay + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, t + delay + duration);
+    const cmp = this.ctx.createDynamicsCompressor();
+    cmp.threshold.value = -6; cmp.ratio.value = 8;
+    osc.connect(cmp); cmp.connect(g); g.connect(this.ctx.destination);
+    osc.start(t + delay); osc.stop(t + delay + duration + 0.01);
   }
-  // Block: metallic click
+
+  // PUÑO — snap seco y agudo, escala con combo
+  playPunch(comboCount=0) {
+    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
+    const t = this.now();
+    const pitch = 1 + Math.min(comboCount * 0.06, 0.5);
+    const vol = this.volume * Math.min(0.8, 0.55 + comboCount * 0.04);
+    // Snap de carne: ruido bandpass agudo
+    this._noise(0.07, 2800 * pitch, 1.2, 'bandpass', vol * 1.0, t);
+    // Componente de "crack" impacto
+    this._noise(0.04, 5000 * pitch, 0.6, 'highpass', vol * 0.7, t);
+    // Sub-thud corporal
+    this._tone('sine', 180 * pitch, 50, 0.09, vol * 0.6, t);
+    // Distorsión de impacto (tono breve con distorsion waveshaper)
+    const dist = this.ctx.createWaveShaper();
+    const curve = new Float32Array(256);
+    for (let i = 0; i < 256; i++) { const x = (i * 2 / 255) - 1; curve[i] = (Math.PI + 200) * x / (Math.PI + 200 * Math.abs(x)); }
+    dist.curve = curve;
+    const osc = this.ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 300 * pitch;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(vol * 0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+    osc.connect(dist); dist.connect(g); g.connect(this.ctx.destination);
+    osc.start(t); osc.stop(t + 0.06);
+  }
+
+  // PATADA — peso bajo + crack de aire
+  playKick(comboCount=0) {
+    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
+    const t = this.now();
+    const pitch = 1 + Math.min(comboCount * 0.04, 0.35);
+    const vol = this.volume * Math.min(0.9, 0.6 + comboCount * 0.04);
+    // Boom bajo
+    this._tone('sine', 140 * pitch, 30, 0.18, vol * 0.85, t);
+    // Sub golpe cuerpo
+    this._noise(0.15, 400 * pitch, 0.4, 'lowpass', vol * 0.75, t);
+    // Crack de piel/ropa
+    this._noise(0.05, 3500 * pitch, 1.5, 'bandpass', vol * 0.6, t);
+    // Whoosh de pierna (sweep de highpass)
+    const sr = this.ctx.sampleRate;
+    const buf = this.ctx.createBuffer(1, Math.floor(sr * 0.1), sr);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1);
+    const src = this.ctx.createBufferSource(); src.buffer = buf;
+    const flt = this.ctx.createBiquadFilter(); flt.type = 'highpass';
+    flt.frequency.setValueAtTime(4000, t); flt.frequency.exponentialRampToValueAtTime(800, t + 0.1);
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(vol * 0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    src.connect(flt); flt.connect(g); g.connect(this.ctx.destination);
+    src.start(t); src.stop(t + 0.12);
+  }
+
+  // BLOCK — metálico resonante
   playBlock() {
     if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
     const t = this.now();
-    const osc = this.ctx.createOscillator();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(800, t);
-    osc.frequency.exponentialRampToValueAtTime(200, t + 0.06);
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(this.volume * 0.25, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-    osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(t); osc.stop(t + 0.08);
-    // Noise click
-    const bufferSize = this.ctx.sampleRate * 0.03;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1);
-    const src = this.ctx.createBufferSource(); src.buffer = buffer;
-    const g2 = this.ctx.createGain();
-    g2.gain.setValueAtTime(this.volume * 0.2, t);
-    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
-    src.connect(g2); g2.connect(this.ctx.destination);
-    src.start(t); src.stop(t + 0.04);
+    const vol = this.volume;
+    this._tone('square', 1200, 300, 0.08, vol * 0.3, t);
+    this._noise(0.06, 800, 2, 'bandpass', vol * 0.4, t);
+    this._tone('triangle', 3000, 1000, 0.05, vol * 0.2, t);
   }
-  // Special: oscillating tone
+
+  // SPECIAL — energía eléctrica
   playSpecial() {
     if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
     const t = this.now();
-    const osc = this.ctx.createOscillator();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(300, t);
-    osc.frequency.linearRampToValueAtTime(600, t + 0.1);
-    osc.frequency.linearRampToValueAtTime(400, t + 0.2);
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(this.volume * 0.35, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'lowpass'; filter.frequency.value = 2000;
-    osc.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(t); osc.stop(t + 0.35);
+    const vol = this.volume;
+    // Whoosh eléctrico
+    this._noise(0.25, 1500, 0.5, 'bandpass', vol * 0.6, t);
+    // Tono power-up ascendente
+    this._tone('sawtooth', 200, 900, 0.3, vol * 0.35, t);
+    this._tone('square', 100, 400, 0.3, vol * 0.25, t, 0.05);
+    // Chispa final
+    this._noise(0.08, 6000, 1.0, 'highpass', vol * 0.5, t + 0.2);
   }
-  // Jump: quick slide up
+
+  // SUPER — impacto total
+  playSuper() {
+    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
+    const t = this.now();
+    const vol = this.volume;
+    this._tone('sawtooth', 60, 20, 0.5, vol * 0.9, t);
+    this._noise(0.5, 2000, 0.3, 'bandpass', vol * 0.8, t);
+    this._noise(0.15, 8000, 0.8, 'highpass', vol * 0.7, t);
+    this._tone('square', 440, 110, 0.4, vol * 0.5, t, 0.05);
+    // Reverb fake: eco rápido
+    [0.08, 0.16, 0.24].forEach(delay => {
+      this._noise(0.1, 1200, 0.5, 'bandpass', vol * (0.4 - delay * 1.5), t + delay);
+    });
+  }
+
+  // COUNTER — destello metálico + tono ascendente
+  playCounter() {
+    if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
+    const t = this.now();
+    this._tone('sine', 800, 1600, 0.15, this.volume * 0.4, t);
+    this._noise(0.06, 4000, 1.5, 'highpass', this.volume * 0.5, t);
+  }
+
   playJump() {
     if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
     const t = this.now();
-    const osc = this.ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(200, t);
-    osc.frequency.exponentialRampToValueAtTime(600, t + 0.1);
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(this.volume * 0.2, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-    osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(t); osc.stop(t + 0.15);
+    this._tone('sine', 220, 660, 0.12, this.volume * 0.2, t);
   }
-  // Win: triumphant arpeggio
+
   playWin() {
     if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
     const t = this.now();
-    const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
-    notes.forEach((freq, i) => {
-      const osc = this.ctx.createOscillator();
-      osc.type = 'square'; osc.frequency.value = freq;
-      const gain = this.ctx.createGain();
-      const start = t + i * 0.12;
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(this.volume * 0.2, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
-      osc.connect(gain); gain.connect(this.ctx.destination);
-      osc.start(start); osc.stop(start + 0.35);
-    });
+    const notes = [523, 659, 784, 1047];
+    notes.forEach((freq, i) => this._tone('square', freq, freq * 1.02, 0.3, this.volume * 0.22, t, i * 0.12));
   }
-  // Round start sound
+
   playRound() {
     if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
     const t = this.now();
-    const osc = this.ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(440, t);
-    osc.frequency.exponentialRampToValueAtTime(880, t + 0.15);
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(this.volume * 0.25, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-    osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(t); osc.stop(t + 0.25);
-    // Second tone
-    const osc2 = this.ctx.createOscillator();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(660, t + 0.15);
-    osc2.frequency.exponentialRampToValueAtTime(1320, t + 0.3);
-    const g2 = this.ctx.createGain();
-    g2.gain.setValueAtTime(this.volume * 0.2, t + 0.15);
-    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-    osc2.connect(g2); g2.connect(this.ctx.destination);
-    osc2.start(t + 0.15); osc2.stop(t + 0.45);
+    this._tone('sine', 440, 880, 0.15, this.volume * 0.25, t);
+    this._tone('sine', 660, 1320, 0.2, this.volume * 0.2, t, 0.15);
   }
-  // Hit sound (generic)
+
   playHit() {
     if (!this.enabled) return; this.ensureCtx(); if (!this.ctx) return;
     const t = this.now();
-    const bufferSize = this.ctx.sampleRate * 0.06;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
-    const src = this.ctx.createBufferSource(); src.buffer = buffer;
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'bandpass'; filter.frequency.value = 1500; filter.Q.value = 0.5;
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(this.volume * 0.4, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-    src.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
-    src.start(t); src.stop(t + 0.08);
+    this._noise(0.08, 1800, 0.8, 'bandpass', this.volume * 0.5, t);
+    this._tone('sine', 100, 35, 0.1, this.volume * 0.5, t);
   }
-  // BGM: simple loop using oscillators
+
   startBGM() {
-    if (!this.enabled || this.bgmPlaying) return; this.ensureCtx(); if (!this.ctx) return;
-    this.stopBGM();
+    if (!this.enabled || this.bgmPlaying) return;
+    this.ensureCtx(); if (!this.ctx) return;
     this.bgmPlaying = true;
-    const t = this.now();
+    const t = this.ctx.currentTime;
     this.bgmGain = this.ctx.createGain();
-    this.bgmGain.gain.value = this.volume * 0.12;
+    this.bgmGain.gain.setValueAtTime(this.volume * 0.08, t);
     this.bgmGain.connect(this.ctx.destination);
-    // Bass line
-    const bass = this.ctx.createOscillator();
-    bass.type = 'triangle';
-    const bassNotes = [65, 73, 82, 98]; // low notes
-    let noteIdx = 0;
-    const bassGain = this.ctx.createGain();
-    bassGain.gain.value = 1;
-    bass.connect(bassGain); bassGain.connect(this.bgmGain);
-    const schedBass = () => {
-      if (!this.bgmPlaying) return;
-      const now = this.now();
-      bass.frequency.setValueAtTime(bassNotes[noteIdx % bassNotes.length], now);
-      noteIdx++;
-      setTimeout(schedBass, 500);
-    };
-    bass.start(t); schedBass();
-    this.bgmOscillators.push(bass);
-    // Pad (chords)
-    const pad = this.ctx.createOscillator();
-    pad.type = 'sine';
-    pad.frequency.value = 220;
-    const padGain = this.ctx.createGain();
-    padGain.gain.value = 0.5;
-    pad.connect(padGain); padGain.connect(this.bgmGain);
-    pad.start(t);
-    this.bgmOscillators.push(pad);
-    // Arpeggiator
-    const arp = this.ctx.createOscillator();
-    arp.type = 'square';
-    const arpNotes = [262, 330, 392, 523, 392, 330];
-    let arpIdx = 0;
-    const arpGain = this.ctx.createGain();
-    arpGain.gain.value = 0.3;
-    arp.connect(arpGain); arpGain.connect(this.bgmGain);
-    const schedArp = () => {
-      if (!this.bgmPlaying) return;
-      arp.frequency.setValueAtTime(arpNotes[arpIdx % arpNotes.length], this.now());
-      arpIdx++;
-      setTimeout(schedArp, 125);
-    };
-    arp.start(t); schedArp();
-    this.bgmOscillators.push(arp);
+    const baseFreqs = [55, 73.4, 82.4, 110];
+    baseFreqs.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      osc.type = i % 2 === 0 ? 'sawtooth' : 'square';
+      osc.frequency.value = freq;
+      osc.connect(this.bgmGain);
+      osc.start(t);
+      this.bgmOscillators.push(osc);
+    });
   }
+
   stopBGM() {
     this.bgmPlaying = false;
-    this.bgmOscillators.forEach(o => { try { o.stop(); o.disconnect(); } catch(e) {} });
+    this.bgmOscillators.forEach(o => { try { o.stop(); } catch(e){} });
     this.bgmOscillators = [];
-    if (this.bgmGain) { try { this.bgmGain.disconnect(); } catch(e) {} }
-    this.bgmGain = null;
+    if (this.bgmGain) { try { this.bgmGain.disconnect(); } catch(e){} this.bgmGain = null; }
   }
 }
 
 // ========================
 // GREEN SCREEN / CHROMA KEY REMOVER
-// ========================
+<body>
+<div id="game-container">
+  <canvas id="gameCanvas"></canvas>
+  <div id="ui-layer">
+    <!-- ========================
+         INTRO SCREEN
+         ======================== -->
+    <div id="intro-screen" class="screen">
+      <div id="intro-logo">KOF STYLE<br>FIGHTER</div>
+      <div id="intro-subtitle">V2 ENHANCED</div>
+      <div id="intro-silhouettes">
+        <div class="intro-char"></div>
+        <div class="intro-char"></div>
+        <div class="intro-char"></div>
+        <div class="intro-char"></div>
+        <div class="intro-char"></div>
+        <div class="intro-char"></div>
+      </div>
+      <div id="intro-prompt">CLICK OR PRESS ANY KEY</div>// ========================
 function removeGreenScreen(img) {
   if (!img || !img.complete || (img.naturalWidth === 0 && img.width === 0)) return img;
   const w = img.naturalWidth || img.width || 64;
@@ -1592,8 +1594,7 @@ class SpriteRenderer {
     ctx.lineWidth = scale;
     ctx.beginPath();
     ctx.moveTo(torsoX + 4, torsoY + torsoH - 6 * scale);
-    ctx.lineTo(torsoX + torsoW - 4, torsoY + torsoH - 6 * scale);
-    ctx.stroke();
+    ctx.lineTo(torsoX + torsoW - 4, torsoY + torsoH - 6 * scale);    ctx.stroke();
 
     // ── HEAD ──────────────────────────────────────────────────────────────
     const headR  = 13 * scale;
@@ -1953,8 +1954,7 @@ class InputSystem {
       };
     }
   }
-}// ========================
-// COMBO DETECTOR (BUG FIX 4: added reset)
+}// ========================// COMBO DETECTOR (BUG FIX 4: added reset)
 // ========================
 class ComboDetector {
   constructor(charData) {
@@ -2370,6 +2370,7 @@ class Character {
       this.comboTimer--;
       if (this.comboTimer <= 0) {
         this.comboCount = 0;
+        this.comboPoints = 0;
         if (this.gameRef) this.gameRef.updateComboDisplay(this.playerNum, 0);
       }
     }
@@ -2461,7 +2462,10 @@ class Character {
             opponent.takeDamage(dmg, this, hb.type, damageNumbers, particles, hitStop, isBlocked);
             this.meter = Math.min(this.maxMeter, this.meter + (isBlocked ? 2 : 5));
             if (!isBlocked) {
-              particles.emitHitSparks(hb.x + hb.w/2, hb.y + hb.h/2, '#ffcc00', 8);
+              const sparkColor = hb.type === 'kick' ? '#00ccff' : hb.type === 'special' ? '#ff00ff' : '#ffcc00';
+              particles.emitHitSparks(hb.x + hb.w/2, hb.y + hb.h/2, sparkColor, 12);
+              // Flash de impacto en canvas
+              if (this.gameRef) this.gameRef.flashHit(sparkColor);
               this.comboDetector.record(hb.type);
               const combo = this.comboDetector.detect();
               if (combo && this.gameRef) this.gameRef.showAnnouncer(combo.name);
@@ -2471,7 +2475,7 @@ class Character {
       }
     }
 
-    this.x = Math.max(50, Math.min(CONFIG.GAME_WIDTH - 50,this.x));
+    this.x = Math.max(50, Math.min(CONFIG.GAME_WIDTH - 50, this.x));
   }
 
   // BUG FIX 2: Frame-based attack system (no setTimeout)
@@ -2788,8 +2792,7 @@ class Game {
     this.dt = 1;
     // Screen shake from heavy hits
     this.screenShake = { x: 0, y: 0, intensity: 0, decay: 0.9 };
-    this.setupUI();
-    this.setupNewScreens();
+    this.setupUI();this.setupNewScreens();
     this.loop = this.loop.bind(this);
     requestAnimationFrame(this.loop);
     window.addEventListener('resize', () => this.resize());
@@ -2957,7 +2960,7 @@ class Game {
   showVictory(winner) {
     const screen = document.getElementById('victory-screen');
     const title = document.getElementById('victory-title');
-    const score = document.getElgetElementById('victory-score');
+    const score = document.getElementById('victory-score');
     if (winner === 'p1')
       title.textContent = 'PLAYER 1 WINS';
       title.className = 'p1-wins';
@@ -3118,8 +3121,7 @@ class Game {
   showRoundText(text) {
     const el = document.getElementById('round-text');
     el.textContent = text;
-    el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 1500);
+    el.classList.add('show');setTimeout(() => el.classList.remove('show'), 1500);
   }
 
   showAnnouncer(text) {
