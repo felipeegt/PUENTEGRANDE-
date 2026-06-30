@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DEXKOF — La Bestia</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a12;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Screens */
+    .screen { display: none; width: 100%; height: 100vh; align-items: center; justify-content: center; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    .box {
+      background: #12121a;
+      border: 2px solid #3a1a5c;
+      border-radius: 12px;
+      padding: 40px 50px;
+      text-align: center;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 0 40px rgba(120, 40, 200, 0.3);
+    }
+    .box h1 {
+      font-size: 2.4rem;
+      letter-spacing: 3px;
+      margin-bottom: 16px;
+      color: #a040e0;
+      text-shadow: 0 0 14px rgba(160, 64, 224, 0.6);
+    }
+    .box p { color: #9090b0; margin-bottom: 14px; line-height: 1.5; }
+    .controls-box {
+      background: #1a1a2e;
+      border-radius: 8px;
+      padding: 14px;
+      margin: 16px 0;
+      font-size: 0.85rem;
+      color: #7070a0;
+      text-align: left;
+      line-height: 1.8;
+    }
+    .controls-box strong { color: #c0a0ff; }
+
+    button {
+      background: #2a1a5a;
+      color: #d0c0ff;
+      border: 2px solid #6030aa;
+      border-radius: 8px;
+      padding: 12px 36px;
+      font-family: 'Courier New', monospace;
+      font-size: 1rem;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #3a2a7a;
+      box-shadow: 0 0 14px rgba(120, 60, 220, 0.5);
+    }
+
+    /* HUD */
+    #hud {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px;
+      background: #12121a;
+      border-bottom: 1px solid #2a1a4a;
+      font-size: 0.85rem;
+    }
+    .health-bar {
+      width: 200px;
+      height: 16px;
+      background: #1a1a2e;
+      border: 1px solid #3a3a5c;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .health-fill {
+      height: 100%;
+      transition: width 0.3s;
+    }
+    .health-fill.player { background: linear-gradient(90deg, #6030aa, #a040e0); }
+    .health-fill.enemy { background: linear-gradient(90deg, #aa3030, #e04040); }
+    .hud-label { font-size: 0.75rem; color: #8080b0; margin-bottom: 2px; }
+    .hud-section { display: flex; flex-direction: column; align-items: center; }
+    #hud-score { color: #c8a84b; font-size: 0.9rem; letter-spacing: 1px; }
+    #hud-wave { color: #7ecfff; font-size: 0.9rem; }
+
+    /* Canvas */
+    #canvas {
+      display: block;
+      border: 2px solid #2a1a4a;
+      background: #0d0d18;
+      image-rendering: pixelated;
+    }
+
+    /* Win / Lose */
+    .box.win h1 { color: #4ecb71; text-shadow: 0 0 12px rgba(78,203,113,0.5); }
+    .box.lose h1 { color: #e05050; text-shadow: 0 0 12px rgba(220,80,80,0.5); }
+  </style>
+</head>
+<body>
+
+  <!-- Start screen -->
+  <div id="screen-start" class="screen active">
+    <div class="box">
+      <h1>🐾 DEXKOF</h1>
+      <p>La Bestia despierta. Derrota a todos los enemigos<br>con tus poderes de fuego y hielo.</p>
+      <div class="controls-box">
+        <strong>Controles:</strong><br>
+        ⬅ ➡ o A/D — Mover<br>
+        ⬆ o W — Saltar<br>
+        J — Ataque fuego 🔥<br>
+        K — Ataque hielo ❄️<br>
+        L — Especial (gasta barra) 💥
+      </div>
+      <button id="btn-start">▶ PELEAR</button>
+    </div>
+  </div>
+
+  <!-- Game screen -->
+  <div id="screen-game" class="screen">
+    <div id="hud">
+      <div class="hud-section">
+        <div class="hud-label">🐾 BESTIA</div>
+        <div class="health-bar"><div class="health-fill player" id="hp-player"></div></div>
+      </div>
+      <div class="hud-section">
+        <span id="hud-score">⭐ 0</span>
+        <span id="hud-wave">Oleada 1</span>
+      </div>
+      <div class="hud-section">
+        <div class="hud-label">👹 ENEMIGO</div>
+        <div class="health-bar"><div class="health-fill enemy" id="hp-enemy"></div></div>
+      </div>
+    </div>
+    <canvas id="canvas" width="800" height="400"></canvas>
+  </div>
+
+  <!-- Win screen -->
+  <div id="screen-win" class="screen">
+    <div class="box win">
+      <h1>🏆 ¡VICTORIA!</h1>
+      <p id="win-msg">Derrotaste a todos los enemigos.</p>
+      <p id="win-score"></p>
+      <button id="btn-win">▶ JUGAR DE NUEVO</button>
+    </div>
+  </div>
+
+  <!-- Lose screen -->
+  <div id="screen-lose" class="screen">
+    <div class="box lose">
+      <h1>💀 DERROTADO</h1>
+      <p>La bestia cayó. Inténtalo de nuevo.</p>
+      <p id="lose-score"></p>
+      <button id="btn-lose">↺ REINTENTAR</button>
+    </div>
+  </div>
+
+  <script>
+// ─────────────────────────────────────────────
+//  DEXKOF — Beat'em up con sprite sheets
+// ─────────────────────────────────────────────
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// ── Sprite sheets (URLs from user's images) ──
+const SPRITE_URLS = [
+  'https://github.com/user-attachments/assets/25b3c4da-f5e0-47f2-acb1-88f0be7196a3',
+  'https://github.com/user-attachments/assets/992599ad-83fa-4c0a-b771-5153118dd9c3',
+  'https://github.com/user-attachments/assets/5d56cd7f-ccdc-4f12-8ce2-396ac8d8f02b',
+  'https://github.com/user-attachments/assets/0f084716-0cfa-48e9-9e28-d953c51ad007',
+];
+
+const spriteImages = [];
+let spritesLoaded = 0;
+
+// Load all sprite sheets
+SPRITE_URLS.forEach((url, i) => {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => { spritesLoaded++; };
+  img.onerror = () => { spritesLoaded++; };
+  img.src = url;
+  spriteImages[i] = img;
+});
+
+// ── Animation definitions (based on sprite sheet 0 layout) ──
+// Sheet 0: 7 rows x 7 cols approx, each cell ~75x75px
+// Row 0: idle (4 frames)
+// Row 1: run (5 frames)  
+// Row 2: run with effects (6 frames)
+// Row 3: fire attack (5 frames)
+// Row 4: ice attack (5 frames)
+// Row 5: fire special (5 frames)
+// Row 6: energy special (5 frames)
+
+const FRAME_W = 75;
+const FRAME_H = 75;
+
+const ANIMS = {
+  idle:       { sheet: 0, row: 0, frames: 4, speed: 8 },
+  run:        { sheet: 0, row: 2, frames: 6, speed: 5 },
+  attackFire: { sheet: 0, row: 3, frames: 5, speed: 4 },
+  attackIce:  { sheet: 0, row: 4, frames: 5, speed: 4 },
+  special:    { sheet: 0, row: 5, frames: 5, speed: 3 },
+};
+
+// ── Screen management ──────────────────────────
+const screens = {
+  start: document.getElementById('screen-start'),
+  game:  document.getElementById('screen-game'),
+  win:   document.getElementById('screen-win'),
+  lose:  document.getElementById('screen-lose'),
+};
+
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+// ── Game State ─────────────────────────────────
+let keys = {};
+let gameState, player, enemies, projectiles, particles, wave, score, rafId;
+
+const GROUND_Y = 320;
+const GRAVITY = 0.6;
+
+function initGame() {
+  keys = {};
+  score = 0;
+  wave = 1;
+
+  player = {
+    x: 100, y: GROUND_Y, vx: 0, vy: 0,
+    w: 64, h: 80,
+    hp: 100, maxHp: 100,
+    special: 0, maxSpecial: 100,
+    anim: 'idle', frame: 0, tick: 0,
+    facing: 1, // 1=right, -1=left
+    attacking: false, attackTimer: 0,
+    invincible: 0,
+    grounded: true,
+  };
+
+  enemies = [];
+  projectiles = [];
+  particles = [];
+  spawnWave(wave);
+  updateHUD();
+}
+
+function spawnWave(w) {
+  const count = 2 + w;
+  for (let i = 0; i < count; i++) {
+    enemies.push({
+      x: 500 + Math.random() * 250,
+      y: GROUND_Y,
+      vx: 0, vy: 0,
+      w: 50, h: 64,
+      hp: 30 + w * 15,
+      maxHp: 30 + w * 15,
+      speed: 1 + w * 0.3,
+      damage: 5 + w * 2,
+      attackCooldown: 0,
+      hit: 0,
+      type: Math.random() > 0.5 ? 'melee' : 'ranged',
+    });
+  }
+}
+
+// ── HUD ────────────────────────────────────────
+const hpPlayer = document.getElementById('hp-player');
+const hpEnemy  = document.getElementById('hp-enemy');
+const hudScore = document.getElementById('hud-score');
+const hudWave  = document.getElementById('hud-wave');
+
+function updateHUD() {
+  hpPlayer.style.width = `${(player.hp / player.maxHp) * 100}%`;
+  const totalEnemyHp = enemies.reduce((s, e) => s + e.hp, 0);
+  const totalEnemyMax = enemies.reduce((s, e) => s + e.maxHp, 0);
+  hpEnemy.style.width = totalEnemyMax > 0 ? `${(totalEnemyHp / totalEnemyMax) * 100}%` : '0%';
+  hudScore.textContent = `⭐ ${score}`;
+  hudWave.textContent = `Oleada ${wave}`;
+}
+
+// ── Input ──────────────────────────────────────
+window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
+window.addEventListener('keyup',   e => { keys[e.key.toLowerCase()] = false; });
+
+// ── Player Logic ───────────────────────────────
+function updatePlayer() {
+  // Movement
+  let moving = false;
+  if (!player.attacking) {
+    if (keys['a'] || keys['arrowleft'])  { player.vx = -4; player.facing = -1; moving = true; }
+    else if (keys['d'] || keys['arrowright']) { player.vx = 4; player.facing = 1; moving = true; }
+    else { player.vx = 0; }
+
+    // Jump
+    if ((keys['w'] || keys['arrowup']) && player.grounded) {
+      player.vy = -12;
+      player.grounded = false;
+    }
+
+    // Attacks
+    if (keys['j'] && !player.attacking) {
+      player.attacking = true;
+      player.attackTimer = 20;
+      player.anim = 'attackFire';
+      player.frame = 0;
+      player.tick = 0;
+      // Spawn fireball
+      projectiles.push({
+        x: player.x + player.facing * 40,
+        y: player.y - 20,
+        vx: player.facing * 8,
+        vy: 0,
+        w: 28, h: 20,
+        damage: 15,
+        type: 'fire',
+        life: 60,
+        owner: 'player',
+      });
+      player.special = Math.min(player.maxSpecial, player.special + 10);
+    }
+    if (keys['k'] && !player.attacking) {
+      player.attacking = true;
+      player.attackTimer = 20;
+      player.anim = 'attackIce';
+      player.frame = 0;
+      player.tick = 0;
+      // Spawn ice bolt
+      projectiles.push({
+        x: player.x + player.facing * 40,
+        y: player.y - 20,
+        vx: player.facing * 6,
+        vy: -1,
+        w: 24, h: 18,
+        damage: 12,
+        type: 'ice',
+        life: 50,
+        owner: 'player',
+      });
+      player.special = Math.min(player.maxSpecial, player.special + 10);
+    }
+    if (keys['l'] && !player.attacking && player.special >= 50) {
+      player.attacking = true;
+      player.attackTimer = 30;
+      player.anim = 'special';
+      player.frame = 0;
+      player.tick = 0;
+      player.special -= 50;
+      // Spawn big blast
+      projectiles.push({
+        x: player.x + player.facing * 30,
+        y: player.y - 30,
+        vx: player.facing * 10,
+        vy: 0,
+        w: 50, h: 40,
+        damage: 40,
+        type: 'special',
+        life: 45,
+        owner: 'player',
+      });
+      // Particles
+      for (let i = 0; i < 8; i++) {
+        particles.push({
+          x: player.x, y: player.y - 20,
+          vx: (Math.random() - 0.5) * 6 * player.facing,
+          vy: (Math.random() - 1) * 4,
+          life: 20 + Math.random() * 20,
+          color: Math.random() > 0.5 ? '#a040e0' : '#e06020',
+          size: 4 + Math.random() * 4,
+        });
+      }
+    }
+  }
+
+  // Attack timer
+  if (player.attacking) {
+    player.attackTimer--;
+    if (player.attackTimer <= 0) {
+      player.attacking = false;
+    }
+  }
+
+  // Physics
+  player.x += player.vx;
+  player.y += player.vy;
+  player.vy += GRAVITY;
+
+  if (player.y >= GROUND_Y) {
+    player.y = GROUND_Y;
+    player.vy = 0;
+    player.grounded = true;
+  }
+
+  // Bounds
+  player.x = Math.max(30, Math.min(canvas.width - 30, player.x));
+
+  // Animation state
+  if (!player.attacking) {
+    if (!player.grounded) player.anim = 'run';
+    else if (moving) player.anim = 'run';
+    else player.anim = 'idle';
+  }
+
+  // Invincibility
+  if (player.invincible > 0) player.invincible--;
+}
+
+// ── Enemy Logic ────────────────────────────────
+function updateEnemies() {
+  for (const e of enemies) {
+    if (e.hp <= 0) continue;
+
+    const dx = player.x - e.x;
+    const dist = Math.abs(dx);
+    const dir = dx > 0 ? 1 : -1;
+
+    if (e.type === 'melee') {
+      if (dist > 60) {
+        e.vx = dir * e.speed;
+      } else {
+        e.vx = 0;
+        if (e.attackCooldown <= 0) {
+          // Melee attack
+          if (player.invincible <= 0) {
+            player.hp -= e.damage;
+            player.invincible = 30;
+            player.vx = -dir * 6;
+          }
+          e.attackCooldown = 60;
+        }
+      }
+    } else {
+      // Ranged: keep distance, shoot
+      if (dist < 150) {
+        e.vx = -dir * e.speed * 0.5;
+      } else if (dist > 300) {
+        e.vx = dir * e.speed * 0.5;
+      } else {
+        e.vx = 0;
+      }
+      if (e.attackCooldown <= 0 && dist < 400) {
+        projectiles.push({
+          x: e.x + dir * 20,
+          y: e.y - 15,
+          vx: dir * 5,
+          vy: 0,
+          w: 16, h: 12,
+          damage: e.damage,
+          type: 'enemy',
+          life: 50,
+          owner: 'enemy',
+        });
+        e.attackCooldown = 80;
+      }
+    }
+
+    if (e.attackCooldown > 0) e.attackCooldown--;
+
+    e.x += e.vx;
+    e.x = Math.max(30, Math.min(canvas.width - 30, e.x));
+
+    if (e.hit > 0) e.hit--;
+  }
+
+  // Remove dead enemies
+  const deadBefore = enemies.length;
+  enemies = enemies.filter(e => e.hp > 0);
+  const killed = deadBefore - enemies.length;
+  score += killed * 100;
+
+  // Check wave complete
+  if (enemies.length === 0) {
+    if (wave >= 5) {
+      gameWin();
+      return;
+    }
+    wave++;
+    spawnWave(wave);
+    updateHUD();
+  }
+}
+
+// ── Projectiles ────────────────────────────────
+function updateProjectiles() {
+  for (const p of projectiles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+
+    if (p.owner === 'player') {
+      for (const e of enemies) {
+        if (e.hp <= 0) continue;
+        if (Math.abs(p.x - e.x) < (p.w + e.w) / 2 && Math.abs(p.y - e.y + 20) < (p.h + e.h) / 2) {
+          e.hp -= p.damage;
+          e.hit = 8;
+          e.vx = p.vx > 0 ? 4 : -4;
+          p.life = 0;
+          // Hit particles
+          for (let i = 0; i < 5; i++) {
+            particles.push({
+              x: p.x, y: p.y,
+              vx: (Math.random() - 0.5) * 4,
+              vy: (Math.random() - 1) * 3,
+              life: 15 + Math.random() * 10,
+              color: p.type === 'fire' ? '#ff6020' : p.type === 'ice' ? '#60c0ff' : '#c040ff',
+              size: 3 + Math.random() * 4,
+            });
+          }
+          score += 10;
+          break;
+        }
+      }
+    } else if (p.owner === 'enemy') {
+      if (player.invincible <= 0 && Math.abs(p.x - player.x) < (p.w + player.w) / 2 && Math.abs(p.y - player.y + 20) < (p.h + player.h) / 2) {
+        player.hp -= p.damage;
+        player.invincible = 30;
+        p.life = 0;
+      }
+    }
+  }
+
+  projectiles = projectiles.filter(p => p.life > 0 && p.x > -50 && p.x < canvas.width + 50);
+}
+
+// ── Particles ──────────────────────────────────
+function updateParticles() {
+  for (const p of particles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.15;
+    p.life--;
+    p.size *= 0.96;
+  }
+  particles = particles.filter(p => p.life > 0);
+}
+
+// ── Draw ───────────────────────────────────────
+function drawSpriteFrame(anim, frame, x, y, facing, scale) {
+  const a = ANIMS[anim];
+  if (!a || !spriteImages[a.sheet] || !spriteImages[a.sheet].complete) {
+    // Fallback: draw colored rectangle
+    ctx.fillStyle = '#6030a0';
+    ctx.fillRect(x - 24 * scale, y - 60 * scale, 48 * scale, 60 * scale);
+    return;
+  }
+
+  const img = spriteImages[a.sheet];
+  const sx = frame * FRAME_W;
+  const sy = a.row * FRAME_H;
+  const dw = FRAME_W * scale;
+  const dh = FRAME_H * scale;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(facing, 1);
+  ctx.drawImage(img, sx, sy, FRAME_W, FRAME_H, -dw / 2, -dh, dw, dh);
+  ctx.restore();
+}
+
+function draw() {
+  // Background
+  ctx.fillStyle = '#0d0d18';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Ground
+  ctx.fillStyle = '#141428';
+  ctx.fillRect(0, GROUND_Y + 10, canvas.width, canvas.height - GROUND_Y);
+  ctx.strokeStyle = '#2a2a5c';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND_Y + 10);
+  ctx.lineTo(canvas.width, GROUND_Y + 10);
+  ctx.stroke();
+
+  // Background elements (simple decorative bars)
+  ctx.fillStyle = '#0f0f20';
+  for (let i = 0; i < 8; i++) {
+    ctx.fillRect(i * 110 + 20, 50, 8, GROUND_Y - 40);
+  }
+
+  // Particles (behind)
+  for (const p of particles) {
+    ctx.globalAlpha = Math.min(1, p.life / 10);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Projectiles
+  for (const p of projectiles) {
+    if (p.type === 'fire') {
+      ctx.fillStyle = '#ff6020';
+      ctx.shadowColor = '#ff4000';
+      ctx.shadowBlur = 12;
+    } else if (p.type === 'ice') {
+      ctx.fillStyle = '#60c0ff';
+      ctx.shadowColor = '#40a0ff';
+      ctx.shadowBlur = 10;
+    } else if (p.type === 'special') {
+      ctx.fillStyle = '#c040ff';
+      ctx.shadowColor = '#a020e0';
+      ctx.shadowBlur = 18;
+    } else {
+      ctx.fillStyle = '#e04040';
+      ctx.shadowColor = '#c02020';
+      ctx.shadowBlur = 8;
+    }
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y, p.w / 2, p.h / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  // Enemies
+  for (const e of enemies) {
+    ctx.save();
+    if (e.hit > 0) {
+      ctx.globalAlpha = 0.5 + Math.random() * 0.5;
+    }
+    const dir = e.x < player.x ? 1 : -1;
+    // Draw enemy as colored figure
+    ctx.fillStyle = e.type === 'melee' ? '#802020' : '#204080';
+    ctx.fillRect(e.x - 20, e.y - 50, 40, 60);
+    // Face
+    ctx.fillStyle = '#ff4040';
+    ctx.fillRect(e.x - 8 + dir * 4, e.y - 44, 6, 6);
+    ctx.fillRect(e.x + 4 + dir * 4, e.y - 44, 6, 6);
+    // HP bar
+    ctx.fillStyle = '#300';
+    ctx.fillRect(e.x - 20, e.y - 58, 40, 4);
+    ctx.fillStyle = '#e04040';
+    ctx.fillRect(e.x - 20, e.y - 58, 40 * (e.hp / e.maxHp), 4);
+    ctx.restore();
+  }
+
+  // Player
+  ctx.save();
+  if (player.invincible > 0 && Math.floor(player.invincible / 3) % 2 === 0) {
+    ctx.globalAlpha = 0.4;
+  }
+
+  // Advance animation frame
+  player.tick++;
+  const anim = ANIMS[player.anim];
+  if (anim && player.tick >= anim.speed) {
+    player.tick = 0;
+    player.frame = (player.frame + 1) % anim.frames;
+  }
+
+  drawSpriteFrame(player.anim, player.frame, player.x, player.y + 10, player.facing, 1.2);
+  ctx.restore();
+
+  // Special bar
+  const barX = 20, barY = canvas.height - 24, barW = 120, barH = 10;
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(barX, barY, barW, barH);
+  ctx.fillStyle = '#6030aa';
+  ctx.fillRect(barX, barY, barW * (player.special / player.maxSpecial), barH);
+  ctx.strokeStyle = '#3a3a5c';
+  ctx.strokeRect(barX, barY, barW, barH);
+  ctx.fillStyle = '#a080e0';
+  ctx.font = '10px monospace';
+  ctx.fillText('ESPECIAL [L]', barX, barY - 4);
+}
+
+// ── Game loop ──────────────────────────────────
+function update() {
+  updatePlayer();
+  updateEnemies();
+  updateProjectiles();
+  updateParticles();
+  updateHUD();
+
+  if (player.hp <= 0) {
+    gameLose();
+    return;
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  rafId = requestAnimationFrame(loop);
+}
+
+function startGame() {
+  if (rafId) cancelAnimationFrame(rafId);
+  initGame();
+  showScreen('game');
+  loop();
+}
+
+// ── End conditions ─────────────────────────────
+function gameWin() {
+  cancelAnimationFrame(rafId);
+  document.getElementById('win-score').textContent = `Puntaje: ${score} pts`;
+  showScreen('win');
+}
+
+function gameLose() {
+  cancelAnimationFrame(rafId);
+  document.getElementById('lose-score').textContent = `Puntaje: ${score} pts`;
+  showScreen('lose');
+}
+
+// ── Button listeners ───────────────────────────
+document.getElementById('btn-start').addEventListener('click', startGame);
+document.getElementById('btn-win').addEventListener('click', startGame);
+document.getElementById('btn-lose').addEventListener('click', startGame);
+  </script>
+</body>
+</html>
