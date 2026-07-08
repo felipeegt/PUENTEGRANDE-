@@ -542,7 +542,8 @@ const CONFIG = {
     chapo:       'assets/characters/chapo.png',
     stoker:      'assets/characters/stoker.png',
     garravas_boss: 'assets/characters/garravas_boss.png',
-    soldado_elemental: 'assets/characters/soldado_elemental.png'
+    soldado_elemental: 'assets/characters/soldado_elemental.png',
+    rayo: 'https://github.com/user-attachments/assets/3dd65835-0d29-4ce2-8630-315ff361ded4'
   },
 
   SFX: {
@@ -879,6 +880,49 @@ const CONFIG = {
       ],
       specialMoves: [
         { name: "Disparo Elemental", input: "D,DF,F+Punch", damage: 140, startup: 14, cost: 25, type: "projectile" },
+      ]
+    },
+    'rayo': {
+      name: 'Rayo', color: '#4169E1',
+      health: 1100, speed: 5.0, jumpPower: 16, spriteScale: 2.0,
+      spritesheet: {
+        src: 'https://github.com/user-attachments/assets/3dd65835-0d29-4ce2-8630-315ff361ded4',
+        mode: 'grid',
+        cellW: 40, cellH: 48, cols: 13, rows: 10
+      },
+      animMap: {
+        idle:         ['idle',      6, 5],
+        walk:         ['walk',      6, 4],
+        walk_back:    ['walk_back', 6, 4],
+        crouch:       ['crouch',    3, 1],
+        punch:        ['punch',     6, 2],
+        punch_2:      ['punch_2',   6, 2],
+        punch_3:      ['punch_3',   5, 2],
+        kick:         ['kick',      6, 3],
+        kick_air:     ['kick_air',  5, 3],
+        special:      ['special',   9, 4],
+        special_2:    ['special_2', 8, 4],
+        super:        ['super',    18, 5],
+        hit:          ['hit',       5, 5],
+        knockdown:    ['knockdown', 6, 5],
+        victory:      ['victory',   6, 8],
+        taunt:        ['taunt',     9, 8],
+        block:        ['block',     9, 1],
+      },
+      animRanges: {
+        idle: 0, walk: 6, walk_back: 12, crouch: 18,
+        punch: 21, punch_2: 27, punch_3: 33,
+        kick: 38, kick_air: 44,
+        special: 49, special_2: 58, super: 66,
+        hit: 84, knockdown: 89, victory: 95, taunt: 101, block: 110
+      },
+      combos: [
+        { name: "Combo Rayo", inputs: ["punch","punch","kick"], damage: 150 },
+        { name: "Descarga Total", inputs: ["kick","punch","special"], damage: 190 },
+      ],
+      specialMoves: [
+        { name: "Rayo Azul", input: "D,DF,F+Punch", damage: 145, startup: 12, cost: 25, type: "projectile" },
+        { name: "Tormenta Eléctrica", input: "F,D,DF+Kick", damage: 175, startup: 16, cost: 35, knockdown: true, type: "uppercut" },
       ]
     }
   }
