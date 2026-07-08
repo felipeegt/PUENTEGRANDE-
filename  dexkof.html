@@ -562,7 +562,7 @@ const CONFIG = {
       name: 'Garravas', color: '#8B0000',
       health: 1200, speed: 4, jumpPower: 14, spriteScale: 2.0,
       spritesheet: {
-        src: 'assets/sprites/garravas/garravas.png',
+        src: 'https://github.com/user-attachments/assets/54876baa-a297-466b-9512-170ea0bf2844',
         mode: 'grid',
         cellW: 128, cellH: 128, cols: 11, rows: 6
       },
@@ -603,7 +603,7 @@ const CONFIG = {
       name: 'Garravas Boss', color: '#550000',
       health: 1500, speed: 3.5, jumpPower: 13, spriteScale: 2.2,
       spritesheet: {
-        src: 'assets/sprites/garravas_boss/garravas_boss.png',
+        src: 'https://github.com/user-attachments/assets/01114d20-b233-4fca-941c-425ae7e50894',
         mode: 'grid',
         cellW: 172, cellH: 192, cols: 8, rows: 4
       },
@@ -645,7 +645,7 @@ const CONFIG = {
       spritesheet: {
         src: 'assets/sprites/dual/dual.png',
         mode: 'grid',
-        cellW: 88, cellH: 128, cols: 16, rows: 6
+        cellW: 88, cellH: 128, cols: 8, rows: 5
       },
       animMap: {
         idle:         ['idle',      6, 5],
@@ -687,7 +687,7 @@ const CONFIG = {
       spritesheet: {
         src: 'assets/sprites/chapo/chapo.png',
         mode: 'grid',
-        cellW: 88, cellH: 128, cols: 16, rows: 6
+        cellW: 88, cellH: 128, cols: 10, rows: 6
       },
       animMap: {
         idle:         ['idle',      6, 5],
@@ -805,7 +805,7 @@ const CONFIG = {
       name: 'Stoker', color: '#9C27B0',
       health: 950, speed: 6, jumpPower: 18, spriteScale: 2.2,
       spritesheet: {
-        src: 'assets/sprites/stoker/stoker.png',
+        src: 'https://github.com/user-attachments/assets/fda09d44-df91-4e83-936b-fa5c0751af7b',
         mode: 'row',
         cellW: 151, cellH: 161, frames: 41
       },
@@ -845,7 +845,7 @@ const CONFIG = {
       name: 'Soldado Elemental', color: '#00BCD4',
       health: 1100, speed: 4.8, jumpPower: 15, spriteScale: 2.0,
       spritesheet: {
-        src: 'assets/sprites/soldado_elemental/soldado_elemental.png',
+        src: 'https://github.com/user-attachments/assets/44d1cd04-2f91-4c85-8281-7145d8337aa5',
         mode: 'row',
         cellW: 92, cellH: 222, frames: 10
       },
@@ -939,19 +939,20 @@ class SpriteSheet {
     const h = this.image.height;
     this.frames = [];
     if (cfg.mode === 'grid') {
-      const cw = cfg.cellW || 100;
-      const ch = cfg.cellH || 100;
       const cols = cfg.cols || 1;
       const rows = cfg.rows || 1;
+      // Auto-detect cell size from actual image dimensions
+      const cw = Math.floor(w / cols);
+      const ch = Math.floor(h / rows);
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           this.frames.push({ sx: c * cw, sy: r * ch, sw: cw, sh: ch });
         }
       }
     } else if (cfg.mode === 'row') {
-      const cw = cfg.cellW || 100;
-      const ch = cfg.cellH || 100;
-      const count = cfg.frames || Math.floor(w / cw);
+      const ch = cfg.cellH || h;
+      const count = cfg.frames || cfg.cols || 1;
+      const cw = cfg.cellW || Math.floor(w / count);
       for (let i = 0; i < count; i++) {
         this.frames.push({ sx: i * cw, sy: 0, sw: cw, sh: ch });
       }

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOF Style Fighter V2 - Three.js UV Optimized</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+        body { margin:0; overflow:hidden; background:#0d0221; }
+        canvas { display:block; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const CONFIG = { GAME_WIDTH: 1280, GAME_HEIGHT: 720 };
+
+        let scene, camera, renderer;
+        let particleSystem;
+        let characterSprites = {};
+
+        const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+        function supportsASTC() {
+            const gl = document.createElement('canvas').getContext('webgl');
+            if (!gl) return false;
+            const ext = gl.getExtension('WEBGL_compressed_texture_astc');
+            return !!ext;
+        }
+
+        function getTextureExt() {
+            return (supportsASTC() && isMobile) ? 'astc' : 'png';
+        }
+
+        function initThreeJS() {
+            const canvas = document.getElementById('gameCanvas');
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            renderer.setSize(CONFIG.GAME_WIDTH, CONFIG.GAME_HEIGHT);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            scene = new THREE.Scene();
+            camera = new THREE.OrthographicCamera(
+                -CONFIG.GAME_WIDTH/2, CONFIG.GAME_WIDTH/2,
+                CONFIG.GAME_HEIGHT/2, -CONFIG.GAME_HEIGHT/2, 1, 100
+            );
+            camera.position.z = 50;
+
+            initParticles();
+            loadOptimizedCharacters();
+            animate();
+        }
+
+        function initParticles() {
+            const count = isMobile ? 4000 : 12000;
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count*3), 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count*3), 3));
+            geometry.setAttribute('size', new THREE.BufferAttribute(new Float32Array(count), 1));
+
+            const material = new THREE.PointsMaterial({
+                size: 9, vertexColors: true, transparent: true,
+                blending: THREE.AdditiveBlending, depthTest: false
+            });
+            particleSystem = new THREE.Points(geometry, material);
+            scene.add(particleSystem);
+        }
+
+        // === UV MAPPING AVANZADO ===
+        function createOptimizedSprite(textureKey, frameX, frameY, frameW, frameH, sheetW, sheetH) {
+            const ext = getTextureExt();
+            const texture = new THREE.TextureLoader().load(`assets/sprites/${textureKey}/${textureKey}.${ext}`, tex => {
+                tex.minFilter = THREE.LinearMipmapLinearFilter;
+                tex.magFilter = THREE.LinearFilter;
+                tex.anisotropy = 8;
+                tex.wrapS = THREE.ClampToEdgeWrapping;
+                tex.wrapT = THREE.ClampToEdgeWrapping;
+            });
+
+            const material = new THREE.SpriteMaterial({
+                map: texture,
+                transparent: true,
+                depthTest: false
+            });
+
+            const sprite = new THREE.Sprite(material);
+
+            // UV Avanzado con offset anti-bleeding para ASTC
+            const uvs = new Float32Array([
+                (frameX + 1) / sheetW, (frameY + frameH - 1) / sheetH,   // bottom-left
+                (frameX + frameW - 1) / sheetW, (frameY + frameH - 1) / sheetH, // bottom-right
+                (frameX + 1) / sheetW, (frameY + 1) / sheetH,           // top-left
+                (frameX + frameW - 1) / sheetW, (frameY + 1) / sheetH   // top-right
+            ]);
+
+            // Aplicar UVs personalizados
+            const geometry = new THREE.PlaneGeometry(1, 1);
+            const uvAttribute = new THREE.BufferAttribute(uvs, 2);
+            geometry.setAttribute('uv', uvAttribute);
+
+            sprite.geometry = geometry;
+            sprite.scale.set(frameW * 1.8, frameH * 1.8, 1);
+
+            return sprite;
+        }
+
+        function loadOptimizedCharacters() {
+            const chars = ['garravas', 'chapo', 'dual', 'incinerador'];
+
+            chars.forEach(key => {
+                const sprite = createOptimizedSprite(key, 0, 0, 120, 180, 1024, 1024);
+                sprite.position.set(-200 + Math.random()*400, -50, 0);
+                scene.add(sprite);
+                characterSprites[key] = sprite;
+            });
+        }
+
+        function emitParticles(x, y, count = 60) {
+            if (!particleSystem) return;
+            const pos = particleSystem.geometry.attributes.position.array;
+            const col = particleSystem.geometry.attributes.color.array;
+            const sz = particleSystem.geometry.attributes.size.array;
+            const total = sz.length;
+
+            for (let i = 0; i < count; i++) {
+                const idx = Math.floor(Math.random() * total) * 3;
+                pos[idx]   = x - CONFIG.GAME_WIDTH/2 + (Math.random()-0.5)*60;
+                pos[idx+1] = y - CONFIG.GAME_HEIGHT/2 + (Math.random()-0.5)*80;
+                pos[idx+2] = 5;
+
+                col[idx] = 1; col[idx+1] = 0.4; col[idx+2] = 0.1;
+                sz[idx/3] = 6 + Math.random()*14;
+            }
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+            particleSystem.geometry.attributes.color.needsUpdate = true;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        window.onload = initThreeJS;
+    </script>
+</body>
+</html>
